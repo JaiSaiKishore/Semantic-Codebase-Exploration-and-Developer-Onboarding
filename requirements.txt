@@ -1,0 +1,10 @@
+PyGithub
+tree-sitter
+tree-sitter-python
+chromadb
+langgraph
+langchain
+langchain-ollama
+python-dotenv
+fastembed
+langchain-groq

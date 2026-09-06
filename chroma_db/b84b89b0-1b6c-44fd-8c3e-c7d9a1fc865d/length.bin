@@ -1,0 +1,6 @@
+Title: fix(langchain): enforce interrupt_on policy on cross-tool edits in HumanInTheLoopMiddleware
+Type: PR
+Body: Fixes #40166
+
+## Problem
+When a human edits a tool call to change its name (e.g., from `tool_a` to `tool_b`), the middleware only evaluates the original tool's `interrupt_on` policy. The edited target tool's policy is never consulted, allowing a configured approval gate to be bypass
