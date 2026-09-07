@@ -24,7 +24,7 @@ history_col = client.get_collection(name="github_history", embedding_function=em
 
 # 2. Initialize Groq LLM
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile", 
+    model="openai/gpt-oss-120b", 
     temperature=0,
     api_key=os.environ.get("GROQ_API_KEY")
 )
@@ -38,13 +38,23 @@ class GraphState(TypedDict):
 
 # 4. Define Agent Nodes
 def route_question(state: GraphState):
-    question = state["question"]
-    system = "Route the user query to either 'codebase' or 'github_history'. If asking about implementation, functions, or how code works, reply ONLY with the word 'codebase'. If asking about bugs, PRs, issues, CVEs, or discussions, reply ONLY with the word 'github_history'."
+    question = state["question"].lower()
     
-    response = llm.invoke([SystemMessage(content=system), HumanMessage(content=question)])
+    # 1. Deterministic Fast-Path
+    # If obvious history/bug keywords are in the prompt, route immediately
+    history_keywords = ["cve", "vulnerability", "pr", "issue", "bug", "pull request"]
+    if any(kw in question for kw in history_keywords):
+        return {"route": "github_history"}
+        
+    # 2. LLM Semantic Routing for ambiguous questions
+    system = """You are a strict routing assistant. 
+    If the user asks about a vulnerability, CVE, bug, pull request, or historical discussion, reply ONLY with 'github_history'. 
+    If the user asks about code implementation, functions, or how a specific class/method works, reply ONLY with 'codebase'."""
+    
+    response = llm.invoke([SystemMessage(content=system), HumanMessage(content=state["question"])])
     route = response.content.strip().lower()
     
-    if "history" in route or "cve" in route or "bug" in route or "pr" in route:
+    if "history" in route:
         return {"route": "github_history"}
     return {"route": "codebase"}
 
