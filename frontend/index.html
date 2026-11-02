@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Semantic Codebase RAG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d0bcff'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/></svg>">
+  <style>
+    :root {
+      --surface: #121318;
+      --surface-low: #0d0e13;
+      --surface-container: #1e1f25;
+      --surface-container-high: #292a2f;
+      --surface-container-highest: #34343a;
+      --on-surface: #e3e1e9;
+      --on-surface-variant: #cbc3d7;
+      --outline: #958ea0;
+      --primary: #d0bcff;
+      --primary-container: #a078ff;
+      --on-primary: #381e72;
+      --secondary: #ffb95f;
+      --tertiary: #4cd7f6;
+      --error: #ffb4ab;
+      --glow: rgba(160, 120, 255, 0.25);
+      --border: rgba(255, 255, 255, 0.08);
+      --mono: 'JetBrains Mono', monospace;
+      --body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--surface);
+      color: var(--on-surface);
+      font-family: var(--body);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #34343a; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #494454; }
+
+    #sidebar {
+      width: 18rem;
+      background-color: rgba(13, 14, 19, 0.95);
+      backdrop-filter: blur(24px);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1rem;
+      z-index: 50;
+      flex-shrink: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.25rem 0.75rem;
+    }
+    .brand-icon {
+      width: 1.85rem; height: 1.85rem;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 0.5rem;
+      background: rgba(208, 188, 255, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(208, 188, 255, 0.2);
+    }
+    .brand-title {
+      font-size: 1.15rem; font-weight: 500;
+      color: var(--on-surface); letter-spacing: -0.02em;
+    }
+
+    .btn-new-chat {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      width: 100%; padding: 0.65rem 1rem; border-radius: 0.75rem;
+      background: rgba(208, 188, 255, 0.08); color: var(--primary);
+      border: 1px solid rgba(208, 188, 255, 0.2);
+      font-family: var(--body); font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s ease;
+      box-shadow: 0 0 16px rgba(208, 188, 255, 0.06);
+    }
+    .btn-new-chat:hover {
+      background: rgba(208, 188, 255, 0.16);
+      border-color: rgba(208, 188, 255, 0.4);
+      box-shadow: 0 0 20px -2px var(--glow);
+      transform: translateY(-1px);
+    }
+
+    .history-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 0.5rem 0.4rem;
+      font-family: var(--mono); font-size: 0.72rem; color: var(--outline);
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+
+    .history-list {
+      display: flex; flex-direction: column; gap: 0.35rem;
+      overflow-y: auto; flex: 1; padding: 0.25rem;
+    }
+    .history-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.55rem 0.65rem; border-radius: 0.65rem;
+      color: var(--on-surface-variant); font-size: 0.82rem; cursor: pointer;
+      transition: all 0.15s ease; border: 1px solid transparent;
+    }
+    .history-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--on-surface);
+    }
+    .history-item.active {
+      background: rgba(208, 188, 255, 0.1);
+      border-color: rgba(208, 188, 255, 0.25);
+      color: var(--primary);
+    }
+    .history-item .title-box {
+      display: flex; align-items: center; gap: 0.5rem; overflow: hidden;
+    }
+    .history-item .title-text {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 11rem;
+    }
+    .btn-del-chat {
+      background: transparent; border: none; color: var(--outline);
+      opacity: 0; cursor: pointer; padding: 0.2rem; border-radius: 0.25rem;
+      transition: opacity 0.15s ease, color 0.15s ease;
+    }
+    .history-item:hover .btn-del-chat { opacity: 0.8; }
+    .btn-del-chat:hover { color: var(--error); opacity: 1; }
+
+    .sidebar-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.85rem 0.5rem 0.25rem;
+      font-family: var(--mono); font-size: 0.72rem; color: #52525b;
+      border-top: 1px solid var(--border);
+    }
+
+    #main-content {
+      flex: 1; display: flex; flex-direction: column; height: 100vh;
+      position: relative; overflow: hidden;
+    }
+
+    #header {
+      height: 3.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.5rem; background: rgba(18, 19, 24, 0.8);
+      backdrop-filter: blur(16px); z-index: 40;
+    }
+
+    .repo-pill {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: var(--surface-container); border: 1px solid var(--border);
+      padding: 0.35rem 0.75rem; border-radius: 9999px;
+      font-size: 0.82rem; font-family: var(--mono); color: var(--on-surface);
+    }
+    .badge-indexed {
+      background: rgba(76, 215, 246, 0.15); color: #4cd7f6;
+      border: 1px solid rgba(76, 215, 246, 0.3);
+      padding: 0.15rem 0.45rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 500;
+    }
+    .badge-unset {
+      background: rgba(255, 185, 95, 0.15); color: #ffb95f;
+      border: 1px solid rgba(255, 185, 95, 0.3);
+      padding: 0.15rem 0.45rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 500;
+    }
+
+    .agent-status-pill {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-family: var(--mono); font-size: 0.75rem; color: var(--tertiary);
+    }
+    .status-dot {
+      width: 0.45rem; height: 0.45rem; border-radius: 50%;
+      background: #4ade80; box-shadow: 0 0 8px #4ade80;
+    }
+
+    #chat-scroll {
+      flex: 1; overflow-y: auto; position: relative;
+      display: flex; flex-direction: column;
+    }
+
+    .ambient-halo {
+      position: absolute; top: -10rem; left: 50%;
+      transform: translateX(-50%); width: 40rem; height: 20rem;
+      background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+      pointer-events: none; opacity: 0.35;
+    }
+
+    .chat-inner {
+      width: 100%; max-width: 52rem; margin: 0 auto;
+      padding: 1.5rem 1.5rem 9rem; flex: 1; display: flex; flex-direction: column;
+    }
+
+    #hero-section {
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; margin: auto 0; padding: 2rem 0; gap: 1.5rem;
+    }
+    .hero-icon {
+      width: 4rem; height: 4rem; border-radius: 1.25rem;
+      background: rgba(208, 188, 255, 0.08); border: 1px solid rgba(208, 188, 255, 0.2);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--primary); box-shadow: 0 0 32px -4px var(--glow);
+    }
+    .hero-title {
+      font-size: 2rem; font-weight: 600; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 40%, var(--primary) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-desc {
+      max-width: 32rem; color: var(--on-surface-variant); font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .repo-input-card {
+      width: 100%; max-width: 36rem; background: var(--surface-container);
+      border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 1rem;
+      padding: 0.85rem; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .repo-input-form {
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .repo-input-field {
+      flex: 1; background: transparent; border: none; color: var(--on-surface);
+      font-family: var(--mono); font-size: 0.85rem; outline: none; padding: 0.25rem 0.5rem;
+    }
+    .repo-input-field::placeholder { color: var(--outline); font-family: var(--body); }
+    .btn-set-repo {
+      padding: 0.5rem 1rem; border-radius: 0.65rem; border: none;
+      background: var(--primary); color: var(--on-primary);
+      font-family: var(--body); font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s ease;
+    }
+    .btn-set-repo:hover { background: var(--primary-container); }
+    .repo-alert {
+      font-family: var(--mono); font-size: 0.75rem; color: #4cd7f6;
+      text-align: left; padding: 0.25rem 0.5rem; display: none; line-height: 1.4;
+    }
+    .btn-set-repo:disabled { opacity: 0.55; cursor: not-allowed; }
+    .repo-progress-box {
+      display: none; flex-direction: column; gap: 0.45rem;
+      padding: 0.55rem 0.65rem; border-radius: 0.65rem;
+      background: rgba(11, 19, 38, 0.75); border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-top: 0.15rem;
+    }
+    .repo-progress-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: var(--mono); font-size: 0.75rem;
+    }
+    .repo-progress-stage { color: #ffb95f; font-weight: 500; }
+    .repo-progress-pct { color: var(--tertiary); font-weight: 600; }
+    .repo-progress-track {
+      width: 100%; height: 6px; border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.08); overflow: hidden;
+    }
+    .repo-progress-fill {
+      height: 100%; width: 0%; border-radius: 9999px;
+      background: linear-gradient(90deg, var(--primary), var(--tertiary));
+      transition: width 0.35s ease;
+    }
+    .repo-progress-steps {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem;
+      margin-top: 0.15rem;
+    }
+    .repo-step-pill {
+      font-family: var(--mono); font-size: 0.65rem; padding: 0.2rem 0.35rem;
+      border-radius: 0.35rem; text-align: center;
+      background: rgba(255, 255, 255, 0.03); color: var(--outline);
+      border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.2s ease;
+    }
+    .repo-step-pill.active {
+      background: rgba(255, 185, 95, 0.14); color: #ffb95f;
+      border-color: rgba(255, 185, 95, 0.4); font-weight: 600;
+    }
+    .repo-step-pill.done {
+      background: rgba(76, 215, 246, 0.12); color: #4cd7f6;
+      border-color: rgba(76, 215, 246, 0.35);
+    }
+    .repo-progress-detail {
+      font-family: var(--mono); font-size: 0.68rem; color: var(--outline);
+      text-align: left;
+    }
+    .indexed-repos-bar {
+      display: none; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+      padding: 0.2rem 0.35rem 0; font-family: var(--mono); font-size: 0.7rem;
+      color: var(--outline);
+    }
+    .indexed-repo-chip {
+      padding: 0.15rem 0.5rem; border-radius: 9999px;
+      background: rgba(76, 215, 246, 0.1); color: var(--tertiary);
+      border: 1px solid rgba(76, 215, 246, 0.25); cursor: pointer;
+      font-family: var(--mono); font-size: 0.68rem; transition: all 0.15s ease;
+    }
+    .indexed-repo-chip:hover {
+      background: rgba(76, 215, 246, 0.2); border-color: var(--tertiary);
+    }
+
+    .suggestions-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;
+      width: 100%; max-width: 44rem;
+    }
+    .suggestion-card {
+      background: rgba(30, 31, 37, 0.7); border: 1px solid var(--border);
+      border-radius: 0.85rem; padding: 0.85rem 1rem; text-align: left;
+      cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; gap: 0.35rem;
+    }
+    .suggestion-card:hover {
+      background: var(--surface-container-high); border-color: rgba(208, 188, 255, 0.3);
+      transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+    .sug-header {
+      font-size: 0.82rem; font-weight: 500; color: var(--primary);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sug-desc { font-size: 0.76rem; color: var(--outline); }
+
+    .messages-container {
+      display: flex; flex-direction: column; gap: 1.5rem; width: 100%;
+    }
+    .message-row-user {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem;
+    }
+    .user-meta {
+      font-family: var(--mono); font-size: 0.7rem; color: var(--outline);
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .user-bubble {
+      background: var(--surface-container-high); border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+      padding: 0.85rem 1.15rem; max-width: 80%;
+      font-size: 0.92rem; line-height: 1.55; color: var(--on-surface);
+      white-space: pre-wrap; word-break: break-word;
+    }
+
+    .message-row-assistant {
+      display: flex; flex-direction: column; gap: 0.6rem;
+      background: rgba(30, 31, 37, 0.4); border: 1px solid var(--border);
+      border-radius: 1.25rem; padding: 1rem 1.25rem;
+    }
+    .assistant-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .agent-identity {
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .agent-avatar {
+      width: 1.75rem; height: 1.75rem; border-radius: 0.5rem;
+      background: rgba(208, 188, 255, 0.15); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .agent-avatar .material-symbols-outlined { font-size: 18px; }
+    .agent-name { font-size: 0.9rem; font-weight: 500; color: var(--on-surface); }
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.2rem 0.6rem; border-radius: 9999px;
+      font-family: var(--mono); font-size: 0.68rem; font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    .pill-cyan {
+      background: rgba(76, 215, 246, 0.12); color: #4cd7f6;
+      border: 1px solid rgba(76, 215, 246, 0.25);
+    }
+    .pill-violet {
+      background: rgba(208, 188, 255, 0.12); color: #d0bcff;
+      border: 1px solid rgba(208, 188, 255, 0.25);
+    }
+    .pill-error {
+      background: rgba(255, 180, 171, 0.12); color: #ffb4ab;
+      border: 1px solid rgba(255, 180, 171, 0.25);
+    }
+
+    .thinking-trace-box {
+      background: var(--surface-container); border: 1px solid var(--border);
+      border-radius: 0.75rem; padding: 0.5rem 0.85rem;
+      font-family: var(--mono); font-size: 0.75rem; color: var(--secondary);
+      display: flex; flex-direction: column; gap: 0.3rem; margin-left: 2.5rem;
+    }
+    .thinking-trace-item {
+      color: var(--on-surface-variant); font-size: 0.72rem;
+      padding-left: 0.5rem; border-left: 2px solid var(--secondary);
+    }
+
+    .assistant-body {
+      margin-left: 2.5rem; font-size: 0.92rem; line-height: 1.65;
+      color: var(--on-surface); white-space: pre-wrap; word-break: break-word;
+    }
+    .assistant-body code {
+      background: var(--surface-container); color: var(--tertiary);
+      padding: 0.15rem 0.35rem; border-radius: 0.3rem;
+      font-family: var(--mono); font-size: 0.85rem; border: 1px solid var(--border);
+    }
+    .assistant-body pre {
+      background: var(--surface-container-high); padding: 0.85rem 1rem;
+      border-radius: 0.65rem; overflow-x: auto; border: 1px solid var(--border);
+      margin: 0.6rem 0; font-family: var(--mono); font-size: 0.82rem; line-height: 1.45;
+    }
+    .assistant-body pre code { background: transparent; padding: 0; border: none; color: #acedff; }
+
+    .context-expander { margin-left: 2.5rem; margin-top: 0.5rem; }
+    .context-toggle-btn {
+      background: var(--surface-container); border: 1px solid var(--border);
+      color: var(--secondary); padding: 0.35rem 0.75rem; border-radius: 0.5rem;
+      font-family: var(--mono); font-size: 0.72rem; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+    .context-toggle-btn:hover { background: var(--surface-container-high); color: var(--primary); }
+    .context-content {
+      display: none; margin-top: 0.4rem; padding: 0.75rem; border-radius: 0.65rem;
+      background: var(--surface-container-high); border: 1px solid var(--border);
+      font-family: var(--mono); font-size: 0.75rem; line-height: 1.4;
+      color: var(--on-surface-variant); max-height: 15rem; overflow-y: auto; white-space: pre-wrap;
+    }
+
+    #input-dock {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 0.75rem 2rem 1.25rem;
+      background: linear-gradient(to top, var(--surface) 75%, transparent);
+      display: flex; flex-direction: column; align-items: center; z-index: 30;
+    }
+    .dock-container {
+      width: 100%; max-width: 50rem; display: flex; flex-direction: column; gap: 0.35rem;
+    }
+    .dock-box {
+      position: relative; width: 100%; border-radius: 1.25rem;
+      background: rgba(41, 42, 47, 0.9); backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(160, 120, 255, 0.06);
+      padding: 0.5rem 0.75rem; display: flex; align-items: flex-end; gap: 0.5rem;
+      transition: all 0.25s ease;
+    }
+    .dock-box:focus-within {
+      border-color: rgba(208, 188, 255, 0.4);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 36px rgba(208, 188, 255, 0.18);
+    }
+    .dock-textarea {
+      flex: 1; background: transparent; border: none; color: var(--on-surface);
+      font-family: var(--body); font-size: 0.92rem; line-height: 1.5; outline: none;
+      resize: none; max-height: 8rem; min-height: 1.5rem; padding: 0.35rem 0.25rem;
+    }
+    .dock-textarea::placeholder { color: var(--outline); }
+    .btn-send {
+      width: 2.25rem; height: 2.25rem; border-radius: 0.75rem;
+      background: var(--primary); color: var(--on-primary); border: none;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      transition: all 0.2s ease; box-shadow: 0 0 16px rgba(208, 188, 255, 0.4);
+    }
+    .btn-send:hover { background: var(--primary-container); transform: translateY(-1px); }
+    .btn-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .dock-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 0.5rem; font-size: 0.72rem; color: var(--outline); font-family: var(--mono);
+    }
+
+    @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+    .thinking-pulse { animation: pulseGlow 1.5s infinite; }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div style="display: flex; flex-direction: column; overflow: hidden; flex: 1;">
+      <div class="brand">
+        <div class="brand-icon">
+          <span class="material-symbols-outlined" style="font-size: 20px;">neurology</span>
+        </div>
+        <span class="brand-title">Codebase RAG</span>
+      </div>
+
+      <button id="btn-new-chat" class="btn-new-chat" title="Start a fresh thread">
+        <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+        <span>New Chat</span>
+      </button>
+
+      <div class="history-header">
+        <span>Chat History</span>
+        <span id="history-count">0</span>
+      </div>
+
+      <div id="history-list" class="history-list"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <span style="display: flex; align-items: center; gap: 0.4rem;">
+        <span class="status-dot"></span>
+        <span>FastAPI :8000</span>
+      </span>
+      <span>LangGraph</span>
+    </div>
+  </aside>
+
+  <!-- Main Workspace -->
+  <main id="main-content">
+    <header id="header">
+      <div class="repo-pill">
+        <span class="material-symbols-outlined" style="font-size: 18px; color: var(--tertiary);">folder_open</span>
+        <span id="header-repo-name" style="font-weight: 500;">No repository selected</span>
+        <span id="header-repo-badge" class="badge-unset">Unset</span>
+      </div>
+
+      <div class="agent-status-pill">
+        <span class="status-dot"></span>
+        <span>Router Online</span>
+      </div>
+    </header>
+
+    <div id="chat-scroll">
+      <div class="ambient-halo"></div>
+
+      <div class="chat-inner">
+        <!-- Landing / Hero Section -->
+        <section id="hero-section">
+          <div class="hero-icon">
+            <span class="material-symbols-outlined" style="font-size: 32px;">neurology</span>
+          </div>
+          <h1 class="hero-title">Semantic Codebase RAG</h1>
+          <p class="hero-desc">
+            Explore any repository architecture, AST syntax structures, or closed GitHub issues, PRs, and CVEs.
+          </p>
+
+          <!-- Blank Pastable GitHub Repository Box -->
+          <div class="repo-input-card">
+            <form id="repo-form" class="repo-input-form">
+              <span class="material-symbols-outlined" style="color: var(--tertiary); font-size: 20px;">link</span>
+              <input
+                type="text"
+                id="repo-input"
+                class="repo-input-field"
+                placeholder="Paste GitHub repository URL (e.g. https://github.com/owner/repo)"
+                value=""
+              />
+              <button type="submit" id="btn-set-repo" class="btn-set-repo">Set Repo</button>
+            </form>
+            <div id="repo-progress-box" class="repo-progress-box">
+              <div class="repo-progress-header">
+                <span id="repo-progress-stage" class="repo-progress-stage">Initializing pipeline...</span>
+                <span id="repo-progress-pct" class="repo-progress-pct">0%</span>
+              </div>
+              <div class="repo-progress-track">
+                <div id="repo-progress-fill" class="repo-progress-fill"></div>
+              </div>
+              <div class="repo-progress-steps">
+                <div id="step-pill-1" class="repo-step-pill">1. Clone</div>
+                <div id="step-pill-2" class="repo-step-pill">2. AST Parse</div>
+                <div id="step-pill-3" class="repo-step-pill">3. FastEmbed</div>
+                <div id="step-pill-4" class="repo-step-pill">4. Issues/PRs</div>
+              </div>
+              <div id="repo-progress-detail" class="repo-progress-detail"></div>
+            </div>
+            <p id="repo-alert" class="repo-alert"></p>
+            <div id="indexed-repos-bar" class="indexed-repos-bar"></div>
+          </div>
+
+          <!-- Suggested Questions -->
+          <div style="width: 100%; display: flex; flex-direction: column; gap: 0.4rem;">
+            <p style="font-family: var(--mono); font-size: 0.72rem; color: #64748b; letter-spacing: 0.08em; text-transform: uppercase;">
+              Sample Exploration Prompts
+            </p>
+            <div class="suggestions-grid">
+              <div class="suggestion-card" data-prompt="I am new to this codebase. Can you give me a high-level overview of the project structure and its main components?">
+                <div class="sug-header">
+                  <span style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span class="material-symbols-outlined">explore</span>
+                    <span>Codebase Overview</span>
+                  </span>
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: var(--outline);">arrow_forward</span>
+                </div>
+                <div class="sug-desc">High-level architecture & key files</div>
+              </div>
+
+              <div class="suggestion-card" data-prompt="What are the core classes and primary functions implemented in this repository?">
+                <div class="sug-header">
+                  <span style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span class="material-symbols-outlined">code</span>
+                    <span>Core Classes & Logic</span>
+                  </span>
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: var(--outline);">arrow_forward</span>
+                </div>
+                <div class="sug-desc">AST extracted classes & functions</div>
+              </div>
+
+              <div class="suggestion-card" data-prompt="How does the main execution flow work from start to finish?">
+                <div class="sug-header">
+                  <span style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span class="material-symbols-outlined">account_tree</span>
+                    <span>Execution Flow</span>
+                  </span>
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: var(--outline);">arrow_forward</span>
+                </div>
+                <div class="sug-desc">Trace entrypoint and method execution</div>
+              </div>
+
+              <div class="suggestion-card" data-prompt="Are there any closed GitHub issues or PRs discussing bug fixes or enhancements?">
+                <div class="sug-header">
+                  <span style="display: flex; align-items: center; gap: 0.35rem;">
+                    <span class="material-symbols-outlined">history_edu</span>
+                    <span>Issues & PR History</span>
+                  </span>
+                  <span class="material-symbols-outlined" style="font-size: 14px; color: var(--outline);">arrow_forward</span>
+                </div>
+                <div class="sug-desc">Closed PRs, CVE fixes & bug discussions</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Messages Container -->
+        <div id="messages-container" class="messages-container"></div>
+      </div>
+    </div>
+
+    <!-- Input Dock -->
+    <div id="input-dock">
+      <div class="dock-container">
+        <div class="dock-box">
+          <textarea
+            id="dock-textarea"
+            class="dock-textarea"
+            rows="1"
+            placeholder="Ask about codebase structure, functions, PRs, or CVEs..."
+          ></textarea>
+          <button id="btn-send" class="btn-send" title="Send question">
+            <span class="material-symbols-outlined" style="font-size: 18px;">arrow_upward</span>
+          </button>
+        </div>
+        <div class="dock-footer">
+          <span>Semantic Codebase RAG • Tree-sitter & ChromaDB Vector Store</span>
+          <span>Press Enter to send, Shift+Enter for new line</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE_URL = window.location.port === '8000' ? '' : 'http://localhost:8000';
+    const STORAGE_KEY = 'codebase_rag_conversations_v8';
+    const ACTIVE_ID_KEY = 'codebase_rag_active_id_v8';
+
+    let conversations = [];
+    let activeId = null;
+    let isProcessing = false;
+    let repoPollInterval = null;
+
+    const sidebarHistoryList = document.getElementById('history-list');
+    const historyCountEl = document.getElementById('history-count');
+    const btnNewChat = document.getElementById('btn-new-chat');
+    const headerRepoName = document.getElementById('header-repo-name');
+    const headerRepoBadge = document.getElementById('header-repo-badge');
+    const heroSection = document.getElementById('hero-section');
+    const repoForm = document.getElementById('repo-form');
+    const repoInput = document.getElementById('repo-input');
+    const btnSetRepo = document.getElementById('btn-set-repo');
+    const repoAlert = document.getElementById('repo-alert');
+    const repoProgressBox = document.getElementById('repo-progress-box');
+    const repoProgressStage = document.getElementById('repo-progress-stage');
+    const repoProgressPct = document.getElementById('repo-progress-pct');
+    const repoProgressFill = document.getElementById('repo-progress-fill');
+    const repoProgressDetail = document.getElementById('repo-progress-detail');
+    const indexedReposBar = document.getElementById('indexed-repos-bar');
+    const messagesContainer = document.getElementById('messages-container');
+    const dockTextarea = document.getElementById('dock-textarea');
+    const btnSend = document.getElementById('btn-send');
+    const chatScroll = document.getElementById('chat-scroll');
+
+    function normalizeRepoIdentifier(url) {
+      if (!url) return '';
+      let clean = url.trim().replace(/\.git$/, '');
+      if (clean.includes('github.com/')) {
+        clean = clean.split('github.com/')[1];
+      }
+      clean = clean.replace(/^\/+|\/+$/g, '');
+      const parts = clean.split('/');
+      if (parts.length >= 2) {
+        return `${parts[parts.length - 2]}/${parts[parts.length - 1]}`;
+      }
+      return clean;
+    }
+
+    function init() {
+      loadFromStorage();
+      if (!conversations || conversations.length === 0) {
+        const defaultId = 'session-' + Date.now();
+        conversations = [{
+          id: defaultId,
+          title: 'New Chat',
+          repoUrl: '',
+          repoName: '',
+          messages: []
+        }];
+        activeId = defaultId;
+        saveToStorage();
+      } else if (!activeId || !conversations.find(c => c.id === activeId)) {
+        activeId = conversations[0].id;
+      }
+
+      renderSidebarHistory();
+      renderActiveConversation();
+      setupEventListeners();
+    }
+
+    function loadIndexedRepositories() {
+      if (indexedReposBar) {
+        indexedReposBar.style.display = 'none';
+        indexedReposBar.innerHTML = '';
+      }
+    }
+
+    function resetRepoBoxUI() {
+      if (repoPollInterval) {
+        clearInterval(repoPollInterval);
+        repoPollInterval = null;
+      }
+      if (repoInput) repoInput.value = '';
+      if (btnSetRepo) {
+        btnSetRepo.disabled = false;
+        btnSetRepo.textContent = 'Set Repo';
+      }
+      if (repoAlert) {
+        repoAlert.style.display = 'none';
+        repoAlert.textContent = '';
+      }
+      if (repoProgressBox) {
+        repoProgressBox.style.display = 'none';
+      }
+      if (repoProgressStage) repoProgressStage.textContent = 'Initializing pipeline...';
+      if (repoProgressPct) repoProgressPct.textContent = '0%';
+      if (repoProgressFill) repoProgressFill.style.width = '0%';
+      if (repoProgressDetail) repoProgressDetail.textContent = '';
+      for (let i = 1; i <= 4; i++) {
+        const pill = document.getElementById(`step-pill-${i}`);
+        if (pill) pill.className = 'repo-step-pill';
+      }
+      if (indexedReposBar) {
+        indexedReposBar.style.display = 'none';
+        indexedReposBar.innerHTML = '';
+      }
+    }
+
+    function updatePipelineProgressUI(step, pct, stageText, detailText, isDone = false, isError = false) {
+      if (!repoProgressBox) return;
+      repoProgressBox.style.display = 'flex';
+      repoProgressStage.textContent = stageText || 'Processing...';
+      repoProgressStage.style.color = isError ? '#ffb4ab' : isDone ? '#4cd7f6' : '#ffb95f';
+      repoProgressPct.textContent = `${pct}%`;
+      repoProgressFill.style.width = `${pct}%`;
+      repoProgressFill.style.background = isError
+        ? '#ffb4ab'
+        : isDone
+          ? 'linear-gradient(90deg, #4cd7f6, #4ade80)'
+          : 'linear-gradient(90deg, var(--primary), var(--tertiary))';
+      repoProgressDetail.textContent = detailText || '';
+
+      for (let i = 1; i <= 4; i++) {
+        const pill = document.getElementById(`step-pill-${i}`);
+        if (!pill) continue;
+        pill.className = 'repo-step-pill';
+        if (isDone || i < step) {
+          pill.classList.add('done');
+        } else if (i === step && !isError) {
+          pill.classList.add('active');
+        }
+      }
+    }
+
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) conversations = JSON.parse(raw);
+        activeId = localStorage.getItem(ACTIVE_ID_KEY);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+        localStorage.setItem(ACTIVE_ID_KEY, activeId);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function getActiveConv() {
+      return conversations.find(c => c.id === activeId) || conversations[0];
+    }
+
+    function setupEventListeners() {
+      btnNewChat.addEventListener('click', handleNewChat);
+
+      repoForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleSetRepo(repoInput.value.trim());
+      });
+
+      document.querySelectorAll('.suggestion-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const prompt = card.getAttribute('data-prompt');
+          if (prompt) sendMessage(prompt);
+        });
+      });
+
+      btnSend.addEventListener('click', () => {
+        const text = dockTextarea.value.trim();
+        if (text && !isProcessing) sendMessage(text);
+      });
+
+      dockTextarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          const text = dockTextarea.value.trim();
+          if (text && !isProcessing) sendMessage(text);
+        }
+      });
+
+      dockTextarea.addEventListener('input', () => {
+        dockTextarea.style.height = 'auto';
+        dockTextarea.style.height = Math.min(dockTextarea.scrollHeight, 128) + 'px';
+      });
+    }
+
+    function handleNewChat() {
+      const newId = 'session-' + Date.now();
+      const newConv = {
+        id: newId,
+        title: 'New Chat',
+        repoUrl: '',
+        repoName: '',
+        messages: []
+      };
+      conversations.unshift(newConv);
+      activeId = newId;
+      saveToStorage();
+
+      resetRepoBoxUI();
+      renderSidebarHistory();
+      renderActiveConversation();
+      repoInput.focus();
+    }
+
+    async function handleSetRepo(url) {
+      if (!url) {
+        repoAlert.style.display = 'block';
+        repoAlert.style.color = '#ffb95f';
+        repoAlert.textContent = 'Please paste a valid GitHub repository URL first.';
+        setTimeout(() => { repoAlert.style.display = 'none'; }, 3000);
+        return;
+      }
+
+      const current = getActiveConv();
+      const repoName = normalizeRepoIdentifier(url);
+      current.repoUrl = url;
+      current.repoName = repoName;
+      saveToStorage();
+
+      if (btnSetRepo) {
+        btnSetRepo.disabled = true;
+        btnSetRepo.textContent = '⏳ Indexing...';
+      }
+      headerRepoName.textContent = repoName;
+      headerRepoBadge.textContent = 'Indexing...';
+      headerRepoBadge.className = 'badge-unset';
+
+      repoAlert.style.display = 'none';
+      updatePipelineProgressUI(1, 5, `Starting ingestion pipeline for ${repoName}...`, 'Connecting to local backend server...');
+
+      if (repoPollInterval) clearInterval(repoPollInterval);
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/repository`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repo_url: url })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || `HTTP ${res.status}`);
+        }
+
+        if (data.status === 'ready') {
+          updatePipelineProgressUI(
+            4,
+            100,
+            `✓ ${repoName} is indexed and ready!`,
+            `${data.code_chunks || 0} code chunks & ${data.history_chunks || 0} GitHub issue/PR records available in ChromaDB.`,
+            true,
+            false
+          );
+          updateRepoHeader(repoName, true);
+          loadIndexedRepositories();
+          if (btnSetRepo) {
+            btnSetRepo.disabled = false;
+            btnSetRepo.textContent = 'Set Repo';
+          }
+        } else {
+          updatePipelineProgressUI(1, 10, data.message || `Step 1/4: Cloning ${repoName}...`, 'Running shallow git clone --depth 1...');
+          repoPollInterval = setInterval(async () => {
+            try {
+              const sRes = await fetch(`${API_BASE_URL}/api/repository/status?repo_name=${encodeURIComponent(repoName)}`);
+              if (sRes.ok) {
+                const sData = await sRes.json();
+                if (sData.status === 'ready') {
+                  clearInterval(repoPollInterval);
+                  updatePipelineProgressUI(
+                    4,
+                    100,
+                    `✓ Repository ${repoName} indexed and ready!`,
+                    `Stored ${sData.code_chunks || 0} AST/code chunks & ${sData.history_chunks || 0} GitHub issue/PR chunks. You can now ask questions below.`,
+                    true,
+                    false
+                  );
+                  updateRepoHeader(repoName, true);
+                  loadIndexedRepositories();
+                  if (btnSetRepo) {
+                    btnSetRepo.disabled = false;
+                    btnSetRepo.textContent = 'Set Repo';
+                  }
+                } else if (sData.status === 'error') {
+                  clearInterval(repoPollInterval);
+                  updatePipelineProgressUI(
+                    sData.step || 1,
+                    100,
+                    `✕ Indexing error for ${repoName}`,
+                    sData.error || 'Pipeline failed',
+                    false,
+                    true
+                  );
+                  if (btnSetRepo) {
+                    btnSetRepo.disabled = false;
+                    btnSetRepo.textContent = 'Set Repo';
+                  }
+                } else {
+                  const stepNum = sData.step || 1;
+                  const pctNum = sData.percent || 15;
+                  updatePipelineProgressUI(
+                    stepNum,
+                    pctNum,
+                    sData.progress || `Indexing ${repoName}...`,
+                    sData.detail || 'Processing repository files...'
+                  );
+                  headerRepoBadge.textContent = `Indexing ${pctNum}%`;
+                }
+              }
+            } catch (pollErr) {
+              clearInterval(repoPollInterval);
+              if (btnSetRepo) {
+                btnSetRepo.disabled = false;
+                btnSetRepo.textContent = 'Set Repo';
+              }
+            }
+          }, 800);
+        }
+      } catch (err) {
+        updatePipelineProgressUI(1, 100, '✕ Connection / Pipeline Error', `Could not index repository: ${err.message}`, false, true);
+        if (btnSetRepo) {
+          btnSetRepo.disabled = false;
+          btnSetRepo.textContent = 'Set Repo';
+        }
+      }
+    }
+
+    function updateRepoHeader(name, isIndexed) {
+      if (name) {
+        headerRepoName.textContent = name;
+        headerRepoBadge.textContent = isIndexed ? 'Indexed' : 'Pending';
+        headerRepoBadge.className = isIndexed ? 'badge-indexed' : 'badge-unset';
+      } else {
+        headerRepoName.textContent = 'No repository selected';
+        headerRepoBadge.textContent = 'Unset';
+        headerRepoBadge.className = 'badge-unset';
+      }
+    }
+
+    function handleDeleteConversation(idToDelete, e) {
+      e.stopPropagation();
+      conversations = conversations.filter(c => c.id !== idToDelete);
+      if (conversations.length === 0) {
+        const newId = 'session-' + Date.now();
+        conversations = [{
+          id: newId,
+          title: 'New Chat',
+          repoUrl: '',
+          repoName: '',
+          messages: []
+        }];
+        activeId = newId;
+      } else if (activeId === idToDelete) {
+        activeId = conversations[0].id;
+      }
+      saveToStorage();
+      renderSidebarHistory();
+      renderActiveConversation();
+    }
+
+    function renderSidebarHistory() {
+      sidebarHistoryList.innerHTML = '';
+      historyCountEl.textContent = conversations.length;
+
+      conversations.forEach(conv => {
+        const item = document.createElement('div');
+        item.className = `history-item ${conv.id === activeId ? 'active' : ''}`;
+        item.innerHTML = `
+          <div class="title-box">
+            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--outline);">chat_bubble</span>
+            <span class="title-text">${escapeHtml(conv.title || 'New Chat')}</span>
+          </div>
+          <button class="btn-del-chat" title="Delete chat">
+            <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+          </button>
+        `;
+
+        item.addEventListener('click', () => {
+          activeId = conv.id;
+          saveToStorage();
+          renderSidebarHistory();
+          renderActiveConversation();
+        });
+
+        const delBtn = item.querySelector('.btn-del-chat');
+        delBtn.addEventListener('click', (e) => handleDeleteConversation(conv.id, e));
+
+        sidebarHistoryList.appendChild(item);
+      });
+    }
+
+    function renderActiveConversation() {
+      const current = getActiveConv();
+      if (!current.repoName && !current.repoUrl) {
+        resetRepoBoxUI();
+      } else {
+        repoInput.value = current.repoUrl || '';
+        if (repoProgressBox) repoProgressBox.style.display = 'none';
+        if (repoAlert) repoAlert.style.display = 'none';
+      }
+      updateRepoHeader(current.repoName, Boolean(current.repoName));
+
+      messagesContainer.innerHTML = '';
+
+      if (!current.messages || current.messages.length === 0) {
+        heroSection.style.display = 'flex';
+      } else {
+        heroSection.style.display = 'none';
+        current.messages.forEach(msg => {
+          if (msg.role === 'user') {
+            renderUserMessage(msg.content, msg.timestamp);
+          } else {
+            renderAssistantMessage(msg);
+          }
+        });
+      }
+      scrollToBottom();
+    }
+
+    function renderUserMessage(text, timestamp) {
+      const row = document.createElement('div');
+      row.className = 'message-row-user';
+      row.innerHTML = `
+        <div class="user-meta">
+          <span>Developer</span>
+          <span>•</span>
+          <span>${escapeHtml(timestamp || '')}</span>
+        </div>
+        <div class="user-bubble">${escapeHtml(text)}</div>
+      `;
+      messagesContainer.appendChild(row);
+    }
+
+    function renderAssistantMessage(msg) {
+      const row = document.createElement('div');
+      row.className = 'message-row-assistant';
+
+      const isCodebase = msg.route === 'codebase';
+      const isHistory = msg.route === 'github_history';
+      const pillClass = isCodebase ? 'pill-cyan' : isHistory ? 'pill-violet' : 'pill-error';
+      const pillLabel = isCodebase ? '💻 Codebase AST' : isHistory ? '🔀 GitHub History' : (msg.route || 'Assistant');
+
+      let traceHtml = '';
+      if (msg.thinkingTrace && msg.thinkingTrace.length > 0) {
+        traceHtml = `
+          <div class="thinking-trace-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Routing & Reasoning Trace</span>
+              <span style="font-size:0.68rem; color:var(--outline);">${msg.thinkingTime || ''}</span>
+            </div>
+            ${msg.thinkingTrace.map(t => `<div class="thinking-trace-item">${escapeHtml(t)}</div>`).join('')}
+          </div>
+        `;
+      }
+
+      let contextHtml = '';
+      if (msg.context) {
+        contextHtml = `
+          <div class="context-expander">
+            <button class="context-toggle-btn">
+              <span class="material-symbols-outlined" style="font-size:14px;">expand_more</span>
+              <span>🔍 View Retrieved & Re-ranked Context</span>
+            </button>
+            <pre class="context-content">${escapeHtml(msg.context)}</pre>
+          </div>
+        `;
+      }
+
+      row.innerHTML = `
+        <div class="assistant-header">
+          <div class="agent-identity">
+            <div class="agent-avatar">
+              <span class="material-symbols-outlined">neurology</span>
+            </div>
+            <span class="agent-name">Codebase Assistant</span>
+            <span class="pill ${pillClass}">${pillLabel}</span>
+          </div>
+        </div>
+        ${traceHtml}
+        <div class="assistant-body">${formatMarkdown(msg.content)}</div>
+        ${contextHtml}
+      `;
+
+      const toggleBtn = row.querySelector('.context-toggle-btn');
+      const contextContent = row.querySelector('.context-content');
+      if (toggleBtn && contextContent) {
+        toggleBtn.addEventListener('click', () => {
+          const isShown = contextContent.style.display === 'block';
+          contextContent.style.display = isShown ? 'none' : 'block';
+          toggleBtn.querySelector('span:first-child').textContent = isShown ? 'expand_more' : 'expand_less';
+        });
+      }
+
+      messagesContainer.appendChild(row);
+    }
+
+    async function sendMessage(text) {
+      if (!text || isProcessing) return;
+      const current = getActiveConv();
+
+      // Check if repository is set
+      if (!current.repoName && !repoInput.value.trim()) {
+        repoAlert.style.display = 'block';
+        repoAlert.style.color = '#ffb95f';
+        repoAlert.textContent = 'Please paste and set a GitHub repository URL above before asking questions.';
+        repoInput.focus();
+        setTimeout(() => { repoAlert.style.display = 'none'; }, 4000);
+        return;
+      } else if (!current.repoName && repoInput.value.trim()) {
+        await handleSetRepo(repoInput.value.trim());
+      }
+
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      if (!current.messages || current.messages.length === 0) {
+        current.title = text.length > 28 ? text.substring(0, 28) + '...' : text;
+        renderSidebarHistory();
+      }
+
+      const userMsg = { role: 'user', content: text, timestamp: now };
+      current.messages.push(userMsg);
+      saveToStorage();
+
+      heroSection.style.display = 'none';
+      renderUserMessage(text, now);
+
+      dockTextarea.value = '';
+      dockTextarea.style.height = 'auto';
+
+      const loadingRow = document.createElement('div');
+      loadingRow.className = 'message-row-assistant thinking-pulse';
+      loadingRow.innerHTML = `
+        <div class="assistant-header">
+          <div class="agent-identity">
+            <div class="agent-avatar">
+              <span class="material-symbols-outlined">neurology</span>
+            </div>
+            <span class="agent-name">Codebase Assistant</span>
+            <span class="pill pill-cyan">⚡ Routing & Retrieving...</span>
+          </div>
+        </div>
+        <div class="assistant-body" style="color: var(--outline); font-family: var(--mono); font-size: 0.85rem; padding-top: 0.25rem;">
+          Querying LangGraph router & evaluating ChromaDB vectors for ${escapeHtml(current.repoName || 'codebase')}...
+        </div>
+      `;
+      messagesContainer.appendChild(loadingRow);
+      scrollToBottom();
+
+      isProcessing = true;
+      btnSend.disabled = true;
+      dockTextarea.disabled = true;
+      const startTime = performance.now();
+
+      try {
+        const repoTarget = current.repoName || normalizeRepoIdentifier(current.repoUrl);
+        const res = await fetch(`${API_BASE_URL}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: current.id,
+            question: text,
+            repo: repoTarget
+          })
+        });
+
+        const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+
+        const data = await res.json();
+        const assistantMsg = {
+          role: 'assistant',
+          route: data.route,
+          content: data.answer,
+          context: data.context,
+          thinkingTime: `${elapsed}s`,
+          thinkingTrace: (data.trace && data.trace.length > 0) ? data.trace : [
+            `Active target repository: ${repoTarget}`,
+            `Query routed to: ${data.route}`,
+            'Retrieved dense vector matches from ChromaDB',
+            'Re-ranked with Cross-Encoder (ms-marco-MiniLM-L-6-v2)',
+            'Synthesized answer with Groq LLM & SQLite thread memory'
+          ],
+          timestamp: now
+        };
+
+        current.messages.push(assistantMsg);
+        saveToStorage();
+
+        loadingRow.remove();
+        renderAssistantMessage(assistantMsg);
+      } catch (err) {
+        const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+        const errorMsg = {
+          role: 'assistant',
+          route: 'error',
+          content: `Could not connect to the Semantic Codebase RAG API at ${API_BASE_URL || 'http://localhost:8000'}.\n\nPlease ensure the backend is running with:\n\`python server.py\`\n\nDetail: ${err.message}`,
+          thinkingTime: `${elapsed}s`,
+          thinkingTrace: ['Connection failed to FastAPI backend server.'],
+          timestamp: now
+        };
+
+        current.messages.push(errorMsg);
+        saveToStorage();
+
+        loadingRow.remove();
+        renderAssistantMessage(errorMsg);
+      } finally {
+        isProcessing = false;
+        btnSend.disabled = false;
+        dockTextarea.disabled = false;
+        dockTextarea.focus();
+        scrollToBottom();
+      }
+    }
+
+    function scrollToBottom() {
+      setTimeout(() => {
+        chatScroll.scrollTop = chatScroll.scrollHeight;
+      }, 50);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatMarkdown(content) {
+      if (!content) return '';
+      let text = escapeHtml(content);
+      text = text.replace(/```([a-zA-Z0-9_]*)\n([\s\S]*?)```/g, (match, lang, code) => `<pre><code>${code}</code></pre>`);
+      text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      return text;
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

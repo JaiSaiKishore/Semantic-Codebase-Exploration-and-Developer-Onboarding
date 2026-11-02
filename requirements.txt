@@ -1,10 +1,30 @@
-PyGithub
-tree-sitter
-tree-sitter-python
-chromadb
-langgraph
-langchain
-langchain-ollama
-python-dotenv
-fastembed
-langchain-groq
+# ==============================================================================
+# Semantic Codebase RAG - Dependency Manifest
+# ==============================================================================
+
+# FastAPI Web Server & ASGI Runtime
+fastapi>=0.110.0
+uvicorn>=0.28.0
+pydantic>=2.6.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# Tree-sitter Multi-Language Concrete Syntax Tree (AST) Parsers
+tree-sitter>=0.21.3
+tree-sitter-python>=0.21.0
+tree-sitter-javascript>=0.21.0
+tree-sitter-typescript>=0.21.0
+
+# Local Embeddings & Persistent Vector Database
+chromadb>=0.4.22
+fastembed>=0.2.7
+sentence-transformers>=2.5.0
+
+# LangGraph State Machine & LLM Reasoning Engine
+langchain-core>=0.1.30
+langchain-groq>=0.1.0
+langgraph>=0.0.30
+langgraph-checkpoint-sqlite>=1.0.0
+
+# GitHub API REST Client
+PyGithub>=2.2.0

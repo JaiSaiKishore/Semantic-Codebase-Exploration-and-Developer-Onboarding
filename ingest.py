@@ -1,36 +1,103 @@
 import os
+import sys
 import subprocess
-from github import Github
-from github import Auth
+from typing import List, Dict, Any, Tuple
+from github import Github, Auth
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Target repository for our testbed
-TARGET_REPO_URL = "https://github.com/langchain-ai/langchain"
-TARGET_REPO_NAME = "langchain-ai/langchain"
-LOCAL_DIR = "./repo_data"
+def parse_repo_url(repo_url: str) -> Tuple[str, str, str]:
+    """Extracts (owner, name, full_name) from any GitHub URL or shorthand."""
+    clean = repo_url.strip().rstrip("/")
+    if clean.endswith(".git"):
+        clean = clean[:-4]
+    
+    if "github.com/" in clean:
+        clean = clean.split("github.com/")[-1]
+    elif "github.com:" in clean:
+        clean = clean.split("github.com:")[-1]
 
-# 1. Clone the raw source code locally
-if not os.path.exists(LOCAL_DIR):
-    print(f"Cloning repository into {LOCAL_DIR}...")
-    subprocess.run(["git", "clone", TARGET_REPO_URL, LOCAL_DIR])
-else:
-    print("Repository already cloned locally.")
+    clean = clean.strip("/")
+    parts = clean.split("/")
+    if len(parts) >= 2:
+        owner = parts[0] if parts[0] != "tree" else parts[-2]
+        name = parts[1] if len(parts) >= 2 else parts[-1]
+        return owner, name, f"{owner}/{name}"
+    
+    return "custom", clean, clean
 
-# 2. Authenticate with GitHub API to fetch context
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-if not GITHUB_TOKEN:
-    raise ValueError("Please set the GITHUB_TOKEN environment variable.")
+def clone_repository(repo_url: str) -> Tuple[str, str]:
+    """Clones a GitHub repository to local disk using shallow clone, or reuses existing clone."""
+    owner, name, full_name = parse_repo_url(repo_url)
+    
+    if full_name == "langchain-ai/langchain" and os.path.exists("./repo_data"):
+        return os.path.abspath("./repo_data"), full_name
+        
+    target_dir = os.path.abspath(f"./repos/{owner}_{name}")
+    os.makedirs(os.path.dirname(target_dir), exist_ok=True)
+    
+    if os.path.exists(os.path.join(target_dir, ".git")):
+        print(f"Repository already cloned at {target_dir}. Using existing files...")
+        try:
+            subprocess.run(["git", "-C", target_dir, "pull", "--ff-only"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+        except Exception:
+            pass
+    else:
+        if os.path.exists(target_dir):
+            import shutil, stat
+            def rm_ro(func, path, _):
+                os.chmod(path, stat.S_IWRITE)
+                func(path)
+            shutil.rmtree(target_dir, onerror=rm_ro)
+        print(f"Cloning {full_name} (--depth 1) into {target_dir}...")
+        clone_url = repo_url if repo_url.startswith(("http://", "https://", "git@")) else f"https://github.com/{full_name}.git"
+        subprocess.run(["git", "clone", "--depth", "1", clone_url, target_dir], check=True, timeout=180)
+        
+    return target_dir, full_name
 
-auth = Auth.Token(GITHUB_TOKEN)
-g = Github(auth=auth)
-repo = g.get_repo(TARGET_REPO_NAME)
+def fetch_github_issues(full_name: str, max_issues: int = 25) -> List[Dict[str, Any]]:
+    """Fetches closed issues and pull requests from GitHub REST API, with fallback to unauthenticated public client."""
+    token = os.getenv("GITHUB_TOKEN")
+    issues = []
+    
+    print(f"Fetching recent closed Issues and PRs for {full_name} via PyGithub...")
+    g = None
+    if token:
+        try:
+            g = Github(auth=Auth.Token(token))
+            repo = g.get_repo(full_name)
+            issues = list(repo.get_issues(state="closed")[:max_issues])
+        except Exception as auth_err:
+            print(f"Notice: GITHUB_TOKEN authentication failed ({auth_err}). Falling back to unauthenticated public API...")
+            g = None
 
-print(f"\nFetching recent closed Issues and PRs for {TARGET_REPO_NAME}...")
-issues = repo.get_issues(state="closed")
+    if g is None:
+        try:
+            g = Github()
+            repo = g.get_repo(full_name)
+            issues = list(repo.get_issues(state="closed")[:max_issues])
+        except Exception as unauth_err:
+            print(f"Notice: GitHub unauthenticated fetch skipped ({unauth_err})")
+            return []
 
-# Fetching the first 20 for initial testing to avoid long wait times
-for issue in issues[:20]:
-    issue_type = "PR" if issue.pull_request else "Issue"
-    print(f"[{issue_type} #{issue.number}]: {issue.title}")
+    issue_data = []
+    for issue in issues:
+        is_pr = bool(issue.pull_request)
+        issue_type = "PR" if is_pr else "Issue"
+        issue_data.append({
+            "number": issue.number,
+            "title": issue.title,
+            "body": issue.body or "No description provided.",
+            "is_pr": is_pr,
+            "repo": full_name
+        })
+        print(f"[{issue_type} #{issue.number}]: {issue.title}")
+        
+    print(f"Successfully fetched {len(issue_data)} issues/PRs.")
+    return issue_data
+
+def run_ingest(repo_url: str):
+    target_dir, full_name = clone_repository(repo_url)
+    issues = fetch_github_issues(full_name)
+    return target_dir, full_name, issues

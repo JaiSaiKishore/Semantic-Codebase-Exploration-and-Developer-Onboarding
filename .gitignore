@@ -1,3 +1,42 @@
+# ==============================================================================
+# Git Ignore Configuration: Semantic Codebase RAG
+# ==============================================================================
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment Variables & Secrets (Keep .env.example tracked)
 .env
-venv
-repo_data
+*.env
+!.env.example
+
+# Python Bytecode, Compilations & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Vector Databases & Conversation Persistence (Runtime generated)
+chroma_db/
+chroma_dbs/
+checkpoints.db*
+
+# Cloned Repositories & Ingestion Staging (Runtime generated)
+repos/
+repo_data/
+issues_history.json
+code_chunks.json
+
+# Operating System & IDE Metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo

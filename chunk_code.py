@@ -1,69 +1,245 @@
 import os
+import sys
+import re
+from typing import List, Dict, Any
 from tree_sitter import Language, Parser
 import tree_sitter_python as tspython
+import tree_sitter_javascript as tsjavascript
+import tree_sitter_typescript as tstypescript
 
-# 1. Initialize the Tree-sitter Python parser
-PY_LANGUAGE = Language(tspython.language())
-parser = Parser(PY_LANGUAGE)
+def get_parser_for_language(lang: Language) -> Parser:
+    try:
+        return Parser(lang)
+    except TypeError:
+        p = Parser()
+        p.language = lang
+        return p
 
-def extract_code_blocks(filepath):
-    """Parses a Python file and extracts functions/classes as discrete chunks."""
-    with open(filepath, "r", encoding="utf-8") as f:
-        code_bytes = f.read().encode("utf-8")
-    
-    tree = parser.parse(code_bytes)
-    root_node = tree.root_node
-    
+PY_LANG = Language(tspython.language())
+JS_LANG = Language(tsjavascript.language())
+TS_LANG = Language(tstypescript.language_typescript())
+
+py_parser = get_parser_for_language(PY_LANG)
+js_parser = get_parser_for_language(JS_LANG)
+ts_parser = get_parser_for_language(TS_LANG)
+
+def chunk_markdown(content: str, filepath: str, repo_name: str) -> List[Dict[str, Any]]:
+    lines = content.splitlines()
+    sections = []
+    current_title = "Overview"
+    current_lines = []
+    start_line = 1
+
+    for idx, line in enumerate(lines, start=1):
+        if re.match(r"^#{1,4}\s+", line):
+            if current_lines and "\n".join(current_lines).strip():
+                sec_text = "\n".join(current_lines).strip()
+                sections.append({
+                    "type": "markdown",
+                    "name": current_title,
+                    "code": f"# Repo: {repo_name} | File: {filepath} | Section: {current_title}\n{sec_text[:3000]}",
+                    "start_line": start_line,
+                    "end_line": idx - 1,
+                    "file": filepath,
+                    "repo": repo_name
+                })
+            current_title = line.lstrip("#").strip()
+            current_lines = [line]
+            start_line = idx
+        else:
+            current_lines.append(line)
+
+    if current_lines and "\n".join(current_lines).strip():
+        sec_text = "\n".join(current_lines).strip()
+        sections.append({
+            "type": "markdown",
+            "name": current_title,
+            "code": f"# Repo: {repo_name} | File: {filepath} | Section: {current_title}\n{sec_text[:3000]}",
+            "start_line": start_line,
+            "end_line": len(lines),
+            "file": filepath,
+            "repo": repo_name
+        })
+
+    return sections
+
+def extract_python_blocks(content: str, code_bytes: bytes, filepath: str, repo_name: str) -> List[Dict[str, Any]]:
+    tree = py_parser.parse(code_bytes)
     chunks = []
-    
-    # 2. Traverse the Abstract Syntax Tree (AST)
-    def traverse(node):
-        if node.type in ['function_definition', 'class_definition']:
-            chunk_bytes = code_bytes[node.start_byte:node.end_byte]
-            
-            name_node = node.child_by_field_name('name')
-            name = name_node.text.decode('utf-8') if name_node else "unknown"
-            
-            chunks.append({
-                "type": node.type,
-                "name": name,
-                "code": chunk_bytes.decode('utf-8'),
-                "start_line": node.start_point[0] + 1,
-                "end_line": node.end_point[0] + 1
-            })
-            
-        for child in node.children:
-            traverse(child)
 
-    traverse(root_node)
+    def traverse(node, current_class=None):
+        node_type = node.type
+        target_node = node
+        if node.parent and node.parent.type == 'decorated_definition':
+            target_node = node.parent
+
+        if node_type == 'class_definition':
+            name_node = node.child_by_field_name('name')
+            class_name = name_node.text.decode('utf-8', errors="ignore") if name_node else "unknown"
+            chunk_bytes = code_bytes[target_node.start_byte:target_node.end_byte]
+            code_text = chunk_bytes.decode('utf-8', errors="ignore")
+            chunks.append({
+                "type": "class_definition",
+                "name": class_name,
+                "code": f"# Repo: {repo_name} | File: {filepath} | Class: {class_name}\n" + code_text[:3500],
+                "start_line": target_node.start_point[0] + 1,
+                "end_line": target_node.end_point[0] + 1,
+                "file": filepath,
+                "repo": repo_name
+            })
+            for child in node.children:
+                traverse(child, current_class=class_name)
+        elif node_type in ('function_definition', 'async_function_definition'):
+            name_node = node.child_by_field_name('name')
+            fn_name = name_node.text.decode('utf-8', errors="ignore") if name_node else "unknown"
+            chunk_bytes = code_bytes[target_node.start_byte:target_node.end_byte]
+            code_text = chunk_bytes.decode('utf-8', errors="ignore")
+            qual_name = f"{current_class}.{fn_name}" if current_class else fn_name
+            chunks.append({
+                "type": node_type,
+                "name": qual_name,
+                "code": f"# Repo: {repo_name} | File: {filepath} | {qual_name}\n" + code_text[:2500],
+                "start_line": target_node.start_point[0] + 1,
+                "end_line": target_node.end_point[0] + 1,
+                "file": filepath,
+                "repo": repo_name
+            })
+            for child in node.children:
+                traverse(child, current_class=current_class)
+        else:
+            for child in node.children:
+                traverse(child, current_class=current_class)
+
+    traverse(tree.root_node)
     return chunks
 
-# 3. Test on a file from our cloned repository
-def get_test_file(directory):
-    for root, _, files in os.walk(directory):
-        for file in files:
-            if file.endswith(".py") and not file.startswith("__"):
-                return os.path.join(root, file)
-    return None
+def extract_js_ts_blocks(content: str, code_bytes: bytes, filepath: str, repo_name: str, is_ts: bool = False) -> List[Dict[str, Any]]:
+    parser = ts_parser if is_ts else js_parser
+    tree = parser.parse(code_bytes)
+    chunks = []
 
-print("Looking for a Python file in ./repo_data to parse...")
-test_file = get_test_file("./repo_data")
+    def traverse(node, current_class=None):
+        node_type = node.type
+        target_node = node
+        if node.parent and node.parent.type in ('export_statement', 'export_default_declaration'):
+            target_node = node.parent
 
-if test_file:
-    print(f"Found: {test_file}")
-    blocks = extract_code_blocks(test_file)
-    
-    print(f"\nSuccessfully extracted {len(blocks)} logical blocks.")
-    if blocks:
-        print("\n--- Example Block Extracted ---")
-        print(f"Type: {blocks[0]['type']}")
-        print(f"Name: {blocks[0]['name']}")
-        print(f"Lines: {blocks[0]['start_line']} to {blocks[0]['end_line']}")
-        print("Code Snippet:")
-        
-        snippet_lines = blocks[0]['code'].split('\n')[:5]
-        print('\n'.join(snippet_lines))
-        if len(snippet_lines) >= 5:
-            print("    ...")
-else:
-    print("Could not find a Python file to test.")
+        if node_type == 'class_declaration':
+            name_node = node.child_by_field_name('name')
+            class_name = name_node.text.decode('utf-8', errors="ignore") if name_node else "AnonymousClass"
+            chunk_bytes = code_bytes[target_node.start_byte:target_node.end_byte]
+            code_text = chunk_bytes.decode('utf-8', errors="ignore")
+            chunks.append({
+                "type": "class_declaration",
+                "name": class_name,
+                "code": f"// Repo: {repo_name} | File: {filepath} | Class: {class_name}\n" + code_text[:3500],
+                "start_line": target_node.start_point[0] + 1,
+                "end_line": target_node.end_point[0] + 1,
+                "file": filepath,
+                "repo": repo_name
+            })
+            for child in node.children:
+                traverse(child, current_class=class_name)
+        elif node_type in ('method_definition', 'public_field_definition'):
+            name_node = node.child_by_field_name('name')
+            fn_name = name_node.text.decode('utf-8', errors="ignore") if name_node else "unknown"
+            chunk_bytes = code_bytes[node.start_byte:node.end_byte]
+            code_text = chunk_bytes.decode('utf-8', errors="ignore")
+            qual_name = f"{current_class}.{fn_name}" if current_class else fn_name
+            chunks.append({
+                "type": "method_definition",
+                "name": qual_name,
+                "code": f"// Repo: {repo_name} | File: {filepath} | {qual_name}\n" + code_text[:2500],
+                "start_line": node.start_point[0] + 1,
+                "end_line": node.end_point[0] + 1,
+                "file": filepath,
+                "repo": repo_name
+            })
+            for child in node.children:
+                traverse(child, current_class=current_class)
+        elif node_type in ('function_declaration', 'generator_function_declaration'):
+            name_node = node.child_by_field_name('name')
+            fn_name = name_node.text.decode('utf-8', errors="ignore") if name_node else "unknown"
+            chunk_bytes = code_bytes[target_node.start_byte:target_node.end_byte]
+            code_text = chunk_bytes.decode('utf-8', errors="ignore")
+            qual_name = f"{current_class}.{fn_name}" if current_class else fn_name
+            chunks.append({
+                "type": node_type,
+                "name": qual_name,
+                "code": f"// Repo: {repo_name} | File: {filepath} | {qual_name}\n" + code_text[:2500],
+                "start_line": target_node.start_point[0] + 1,
+                "end_line": target_node.end_point[0] + 1,
+                "file": filepath,
+                "repo": repo_name
+            })
+            for child in node.children:
+                traverse(child, current_class=current_class)
+        elif node_type in ('interface_declaration', 'type_alias_declaration'):
+            name_node = node.child_by_field_name('name')
+            decl_name = name_node.text.decode('utf-8', errors="ignore") if name_node else "type"
+            chunk_bytes = code_bytes[target_node.start_byte:target_node.end_byte]
+            code_text = chunk_bytes.decode('utf-8', errors="ignore")
+            chunks.append({
+                "type": node_type,
+                "name": decl_name,
+                "code": f"// Repo: {repo_name} | File: {filepath} | {decl_name}\n" + code_text[:2500],
+                "start_line": target_node.start_point[0] + 1,
+                "end_line": target_node.end_point[0] + 1,
+                "file": filepath,
+                "repo": repo_name
+            })
+        else:
+            for child in node.children:
+                traverse(child, current_class=current_class)
+
+    traverse(tree.root_node)
+    return chunks
+
+def extract_code_blocks(filepath: str, repo_name: str = "codebase") -> List[Dict[str, Any]]:
+    try:
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+    except Exception as e:
+        print(f"Error reading {filepath}: {e}")
+        return []
+
+    if not content.strip():
+        return []
+
+    ext = os.path.splitext(filepath)[1].lower()
+    code_bytes = content.encode("utf-8")
+
+    if ext == ".md":
+        return chunk_markdown(content, filepath, repo_name)
+    elif ext == ".py":
+        blocks = extract_python_blocks(content, code_bytes, filepath, repo_name)
+    elif ext in (".js", ".jsx", ".mjs", ".cjs"):
+        blocks = extract_js_ts_blocks(content, code_bytes, filepath, repo_name, is_ts=False)
+    elif ext in (".ts", ".tsx"):
+        blocks = extract_js_ts_blocks(content, code_bytes, filepath, repo_name, is_ts=True)
+    else:
+        blocks = []
+
+    # Fallback for procedural scripts, HTML/CSS/C/C++/Java, or files without top-level classes/functions
+    if not blocks and content.strip():
+        lines = content.splitlines()
+        fname = os.path.basename(filepath)
+        window = 80
+        for start in range(0, len(lines), window):
+            segment = "\n".join(lines[start:start+window])
+            if segment.strip():
+                part_num = (start // window) + 1
+                block_name = fname if len(lines) <= window else f"{fname} (part {part_num})"
+                blocks.append({
+                    "type": "file_content",
+                    "name": block_name,
+                    "code": f"# Repo: {repo_name} | File: {filepath} | {block_name}\n" + segment[:2800],
+                    "start_line": start + 1,
+                    "end_line": min(start + window, len(lines)),
+                    "file": filepath,
+                    "repo": repo_name
+                })
+
+    return blocks
+
+extract_ast_blocks = extract_code_blocks

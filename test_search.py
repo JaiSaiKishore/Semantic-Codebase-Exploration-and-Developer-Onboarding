@@ -1,47 +1,52 @@
-import chromadb
-from chromadb import Documents, EmbeddingFunction, Embeddings
-from fastembed import TextEmbedding
+import sys
+from db_config import client, embed_fn, code_col, history_col
 
-class LocalFastEmbed(EmbeddingFunction):
-    def __init__(self, model_name="BAAI/bge-small-en-v1.5"):
-        self.model = TextEmbedding(model_name=model_name)
-        
-    def __call__(self, input: Documents) -> Embeddings:
-        return [e.tolist() for e in self.model.embed(input)]
+def search_code(query: str, repo: str = None, n_results: int = 3):
+    print(f"\n--- Searching Codebase for: '{query}' [Repo: {repo or 'All'}] ---")
+    where_filter = {"repo": repo} if repo else None
+    try:
+        results = code_col.query(query_texts=[query], n_results=n_results, where=where_filter)
+    except Exception as e:
+        print(f"Filtered query notice: {e}, falling back to general query")
+        results = code_col.query(query_texts=[query], n_results=n_results)
 
-# 1. Connect to the existing local database
-print("Connecting to ChromaDB...")
-client = chromadb.PersistentClient(path="./chroma_db")
-embed_fn = LocalFastEmbed()
+    if not results["ids"] or not results["ids"][0]:
+        print("No matching code chunks found.")
+        return
 
-code_col = client.get_collection(name="codebase_chunks", embedding_function=embed_fn)
-history_col = client.get_collection(name="github_history", embedding_function=embed_fn)
-
-def search_code(query, n_results=2):
-    print(f"\n--- Searching Codebase for: '{query}' ---")
-    results = code_col.query(query_texts=[query], n_results=n_results)
-    
-    for i in range(len(results['ids'][0])):
-        meta = results['metadatas'][0][i]
-        dist = results['distances'][0][i]
+    for i in range(len(results["ids"][0])):
+        meta = results["metadatas"][0][i]
+        dist = results["distances"][0][i]
         print(f"\nMatch {i+1} (Distance: {dist:.4f})")
-        print(f"File: {meta['file']}")
-        print(f"Function/Class: {meta['name']} (Lines {meta['start_line']}-{meta['end_line']})")
+        print(f"Repo: {meta.get('repo', 'unknown')}")
+        print(f"File: {meta.get('file', 'unknown')}")
+        print(f"Symbol: {meta.get('name', 'unknown')} (Lines {meta.get('start_line')}-{meta.get('end_line')})")
+        snippet = results["documents"][0][i]
+        print(f"Preview: {snippet[:150].strip()}...")
 
-def search_history(query, n_results=2):
-    print(f"\n--- Searching GitHub History for: '{query}' ---")
-    results = history_col.query(query_texts=[query], n_results=n_results)
-    
-    for i in range(len(results['ids'][0])):
-        meta = results['metadatas'][0][i]
-        dist = results['distances'][0][i]
-        doc = results['documents'][0][i]
+def search_history(query: str, repo: str = None, n_results: int = 3):
+    print(f"\n--- Searching GitHub History for: '{query}' [Repo: {repo or 'All'}] ---")
+    where_filter = {"repo": repo} if repo else None
+    try:
+        results = history_col.query(query_texts=[query], n_results=n_results, where=where_filter)
+    except Exception as e:
+        results = history_col.query(query_texts=[query], n_results=n_results)
+
+    if not results["ids"] or not results["ids"][0]:
+        print("No matching issues or PRs found.")
+        return
+
+    for i in range(len(results["ids"][0])):
+        meta = results["metadatas"][0][i]
+        dist = results["distances"][0][i]
+        doc = results["documents"][0][i]
         print(f"\nMatch {i+1} (Distance: {dist:.4f})")
-        print(f"Type: {'PR' if meta['is_pr'] else 'Issue'} #{meta['number']} - {meta['title']}")
-        # Print just the first 150 characters of the body
-        print(f"Preview: {doc.split('Body: ')[-1][:150]}...")
+        print(f"Repo: {meta.get('repo', 'unknown')}")
+        print(f"Type: {'PR' if meta.get('is_pr') else 'Issue'} #{meta.get('number')} - {meta.get('title')}")
+        print(f"Preview: {doc.split('Body: ')[-1][:150].strip()}...")
 
-# 2. Run test queries
 if __name__ == "__main__":
-    search_code("How does the text splitter or chunking logic work?")
-    search_history("Prompt template formatting vulnerability or CVE")
+    test_query = sys.argv[1] if len(sys.argv) > 1 else "How does palindrome check work?"
+    test_repo = sys.argv[2] if len(sys.argv) > 2 else "superswan/beginner"
+    search_code(test_query, repo=test_repo)
+    search_history(test_query, repo=test_repo)
