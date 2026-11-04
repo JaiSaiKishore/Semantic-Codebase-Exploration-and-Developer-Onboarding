@@ -10,7 +10,15 @@ if (-not (Test-Path ".env")) {
     exit 1
 }
 
-$pythonExe = if (Test-Path "venv\Scripts\python.exe") { ".\venv\Scripts\python.exe" } else { "python" }
+$pythonExe = "python"
+if (Test-Path "venv\Scripts\python.exe") {
+    try {
+        & ".\venv\Scripts\python.exe" --version 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            $pythonExe = ".\venv\Scripts\python.exe"
+        }
+    } catch {}
+}
 
 Start-Job -ScriptBlock {
     Start-Sleep -Seconds 3

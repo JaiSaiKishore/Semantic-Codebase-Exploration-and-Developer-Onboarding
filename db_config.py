@@ -1,4 +1,9 @@
 import os
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
 import chromadb
 from chromadb import Documents, EmbeddingFunction, Embeddings
 from fastembed import TextEmbedding

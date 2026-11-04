@@ -10,6 +10,8 @@ load_dotenv()
 def parse_repo_url(repo_url: str) -> Tuple[str, str, str]:
     """Extracts (owner, name, full_name) from any GitHub URL or shorthand."""
     clean = repo_url.strip().rstrip("/")
+    # Strip URL queries or anchors
+    clean = clean.split("?")[0].split("#")[0].strip().rstrip("/")
     if clean.endswith(".git"):
         clean = clean[:-4]
     
@@ -21,14 +23,18 @@ def parse_repo_url(repo_url: str) -> Tuple[str, str, str]:
     clean = clean.strip("/")
     parts = clean.split("/")
     if len(parts) >= 2:
-        owner = parts[0] if parts[0] != "tree" else parts[-2]
-        name = parts[1] if len(parts) >= 2 else parts[-1]
+        owner = parts[0]
+        name = parts[1]
+        # Ignore tree/blob segments if pasted (e.g. owner/repo/tree/main)
         return owner, name, f"{owner}/{name}"
     
     return "custom", clean, clean
 
 def clone_repository(repo_url: str) -> Tuple[str, str]:
-    """Clones a GitHub repository to local disk using shallow clone, or reuses existing clone."""
+    """
+    Clones a GitHub repository to local disk using an optimized shallow clone
+    (--depth 1 --single-branch --no-tags) or reuses/refreshes an existing clone.
+    """
     owner, name, full_name = parse_repo_url(repo_url)
     
     if full_name == "langchain-ai/langchain" and os.path.exists("./repo_data"):
@@ -38,9 +44,15 @@ def clone_repository(repo_url: str) -> Tuple[str, str]:
     os.makedirs(os.path.dirname(target_dir), exist_ok=True)
     
     if os.path.exists(os.path.join(target_dir, ".git")):
-        print(f"Repository already cloned at {target_dir}. Using existing files...")
+        print(f"Repository already cloned at {target_dir}. Reusing local files...")
         try:
-            subprocess.run(["git", "-C", target_dir, "pull", "--ff-only"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+            # Fast, non-blocking check for updates (5s timeout)
+            subprocess.run(
+                ["git", "-C", target_dir, "pull", "--ff-only"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5
+            )
         except Exception:
             pass
     else:
@@ -50,9 +62,19 @@ def clone_repository(repo_url: str) -> Tuple[str, str]:
                 os.chmod(path, stat.S_IWRITE)
                 func(path)
             shutil.rmtree(target_dir, onerror=rm_ro)
-        print(f"Cloning {full_name} (--depth 1) into {target_dir}...")
+            
+        print(f"Cloning {full_name} (--depth 1 --single-branch --no-tags) into {target_dir}...")
         clone_url = repo_url if repo_url.startswith(("http://", "https://", "git@")) else f"https://github.com/{full_name}.git"
-        subprocess.run(["git", "clone", "--depth", "1", clone_url, target_dir], check=True, timeout=180)
+        
+        proc = subprocess.run(
+            ["git", "clone", "--depth", "1", "--single-branch", "--no-tags", clone_url, target_dir],
+            capture_output=True,
+            text=True,
+            timeout=180
+        )
+        if proc.returncode != 0:
+            err_msg = proc.stderr.strip() if proc.stderr else f"Exit code {proc.returncode}"
+            raise RuntimeError(f"Git clone failed: {err_msg}")
         
     return target_dir, full_name
 
@@ -65,7 +87,7 @@ def fetch_github_issues(full_name: str, max_issues: int = 25) -> List[Dict[str, 
     g = None
     if token:
         try:
-            g = Github(auth=Auth.Token(token))
+            g = Github(auth=Auth.Token(token), timeout=10)
             repo = g.get_repo(full_name)
             issues = list(repo.get_issues(state="closed")[:max_issues])
         except Exception as auth_err:
@@ -74,7 +96,7 @@ def fetch_github_issues(full_name: str, max_issues: int = 25) -> List[Dict[str, 
 
     if g is None:
         try:
-            g = Github()
+            g = Github(timeout=10)
             repo = g.get_repo(full_name)
             issues = list(repo.get_issues(state="closed")[:max_issues])
         except Exception as unauth_err:

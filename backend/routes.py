@@ -1,16 +1,19 @@
 import os
 import hmac
 import hashlib
-from typing import Optional, List
+import asyncio
+from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 from fastapi.responses import FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from langgraph.checkpoint.sqlite import SqliteSaver
 from agent import workflow, code_col, history_col
-from backend.ingestion import parse_repo_identifier, run_repo_ingestion, INDEX_STATUS
+from backend.ingestion import parse_repo_identifier, run_repo_ingestion, INDEX_STATUS, resolve_repo_dir
+from backend.architecture import get_or_build_architecture_model, ARCHITECTURE_MODELS
+from store_vectors import scan_repository_files
 
 compiled_app = {}
 current_repository = {
@@ -29,7 +32,7 @@ def update_current_repo_status(repo_name: str, new_status: str):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     checkpoint_path = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), "checkpoints.db"))
-    async with AsyncSqliteSaver.from_conn_string(checkpoint_path) as checkpointer:
+    with SqliteSaver.from_conn_string(checkpoint_path) as checkpointer:
         compiled_app["agent"] = workflow.compile(checkpointer=checkpointer)
         print("Database connection opened and Graph compiled.")
         yield
@@ -94,11 +97,12 @@ async def get_repo_status(repo_name: Optional[str] = None):
             "error": None
         }
 
-    status_info = INDEX_STATUS.get(target)
+    _, _, normalized = parse_repo_identifier(target)
+    status_info = INDEX_STATUS.get(normalized) or INDEX_STATUS.get(target)
     if not status_info:
         try:
-            res = code_col.get(where={"repo": target})
-            h_res = history_col.get(where={"repo": target})
+            res = code_col.get(where={"repo": normalized})
+            h_res = history_col.get(where={"repo": normalized})
             code_count = len(res.get("ids", []))
             hist_count = len(h_res.get("ids", []))
 
@@ -114,6 +118,7 @@ async def get_repo_status(repo_name: Optional[str] = None):
                     "history_chunks": hist_count,
                     "error": None
                 }
+                current_repository["name"] = normalized
                 current_repository["status"] = "ready"
             else:
                 status_info = {
@@ -139,9 +144,9 @@ async def get_repo_status(repo_name: Optional[str] = None):
                 "history_chunks": 0,
                 "error": None
             }
-        INDEX_STATUS[target] = status_info
+        INDEX_STATUS[normalized] = status_info
 
-    return {"repo_name": target, **status_info}
+    return {"repo_name": normalized, **status_info}
 
 @app.get("/api/repositories")
 async def list_repositories():
@@ -192,6 +197,16 @@ async def set_and_index_repository(request: RepositoryRequest, background_tasks:
     except Exception:
         pass
 
+    # Check if already indexing
+    existing_status = INDEX_STATUS.get(full_name)
+    if existing_status and existing_status.get("status") == "indexing":
+        return {
+            "status": "indexing",
+            "repository": current_repository,
+            "repo_name": full_name,
+            "message": existing_status.get("progress", f"Indexing {full_name} is already in progress...")
+        }
+
     # Queue background indexing task
     current_repository["status"] = "indexing"
     INDEX_STATUS[full_name] = {
@@ -210,6 +225,7 @@ async def set_and_index_repository(request: RepositoryRequest, background_tasks:
     return {
         "status": "indexing",
         "repository": current_repository,
+        "repo_name": full_name,
         "message": f"Step 1/4: Cloning {full_name} and starting AST pipeline..."
     }
 
@@ -231,6 +247,7 @@ async def delete_repository(repo_name: str):
                 func(path)
             shutil.rmtree(repo_dir, onerror=rm_ro)
         INDEX_STATUS.pop(full_name, None)
+        ARCHITECTURE_MODELS.pop(full_name, None)
         if current_repository.get("name") == full_name:
             current_repository["name"] = ""
             current_repository["url"] = ""
@@ -253,12 +270,82 @@ async def reset_all_endpoint():
             for i in range(0, len(ids), 500):
                 history_col.delete(ids=ids[i:i+500])
         INDEX_STATUS.clear()
+        ARCHITECTURE_MODELS.clear()
         current_repository["url"] = ""
         current_repository["name"] = ""
         current_repository["status"] = "unset"
         return {"status": "success", "message": "All repository caches and collections cleared."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ── 2B. Architecture Intelligence Endpoints ──────────────────────────────
+def _resolve_architecture_model(repo_identifier: Optional[str], force_refresh: bool = False) -> Dict[str, Any]:
+    target = repo_identifier or current_repository["name"]
+    if not target:
+        raise HTTPException(status_code=400, detail="No repository specified. Please set a repository first.")
+    owner, name, full_name = parse_repo_identifier(target)
+    canonical_name = full_name if target not in ("codebase", "local", "current") else "codebase"
+
+    # 1. Check in-memory cache (only if not forcing refresh)
+    if not force_refresh and canonical_name in ARCHITECTURE_MODELS:
+        return ARCHITECTURE_MODELS[canonical_name]
+
+    # 2. Check disk repository directory via robust resolver
+    repo_dir = resolve_repo_dir(target)
+    if repo_dir and os.path.exists(repo_dir):
+        _, all_files = scan_repository_files(repo_dir, max_core=800, max_total=2500)
+        if all_files:
+            return get_or_build_architecture_model(repo_dir, canonical_name, all_files, force_refresh=force_refresh)
+
+    # 3. Check if repository is currently indexing
+    status_info = INDEX_STATUS.get(full_name)
+    if status_info and status_info.get("status") == "indexing":
+        pct = status_info.get("percent", 0)
+        raise HTTPException(
+            status_code=202, 
+            detail=f"Repository '{full_name}' is currently being indexed ({pct}% completed). Architecture analysis will be ready once ingestion completes."
+        )
+
+    raise HTTPException(
+        status_code=404, 
+        detail=f"Architecture model not found for '{full_name}'. Please ensure repository is indexed."
+    )
+
+@app.get("/api/architecture")
+async def get_repository_architecture(repo_name: Optional[str] = None, refresh: bool = False):
+    return _resolve_architecture_model(repo_name, force_refresh=refresh)
+
+@app.post("/api/architecture/reanalyze")
+async def reanalyze_repository_architecture(repo_name: Optional[str] = None):
+    return _resolve_architecture_model(repo_name, force_refresh=True)
+
+@app.get("/api/architecture/conformance")
+async def get_architecture_conformance(repo_name: Optional[str] = None):
+    model = _resolve_architecture_model(repo_name)
+    return {
+        "repository": model.get("repository"),
+        "health_score": model.get("health_score"),
+        "dominant_pattern": model.get("dominant_pattern"),
+        "conformance": model.get("conformance"),
+        "cycles": model.get("cycles")
+    }
+
+@app.get("/api/architecture/graph")
+async def get_architecture_graph(repo_name: Optional[str] = None):
+    model = _resolve_architecture_model(repo_name)
+    return {
+        "repository": model.get("repository"),
+        "graph": model.get("graph"),
+        "coupling_metrics": model.get("coupling_metrics")
+    }
+
+@app.get("/api/architecture/conventions")
+async def get_architecture_conventions(repo_name: Optional[str] = None):
+    model = _resolve_architecture_model(repo_name)
+    return {
+        "repository": model.get("repository"),
+        "conventions": model.get("conventions")
+    }
 
 # ── 3. Chat Endpoint ─────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
@@ -283,10 +370,22 @@ async def chat_endpoint(request: ChatRequest):
         raise HTTPException(status_code=400, detail="No repository specified. Please set a repository first.")
         
     _, _, repo_target = parse_repo_identifier(raw_repo)
+
+    # Check if target repository is still indexing
+    status_info = INDEX_STATUS.get(repo_target)
+    if status_info and status_info.get("status") == "indexing":
+        pct = status_info.get("percent", 0)
+        return ChatResponse(
+            route="indexing",
+            answer=f"Repository **{repo_target}** is currently indexing ({pct}% completed). Please wait until the ingestion pipeline finishes before asking questions about this codebase.",
+            context="",
+            trace=[f"Active target repository: {repo_target}", f"Indexing status: {pct}% complete"]
+        )
+
     config = {"configurable": {"thread_id": request.session_id}}
     
     try:
-        result = await agent.ainvoke({"question": request.question, "repo": repo_target}, config=config)
+        result = await asyncio.to_thread(agent.invoke, {"question": request.question, "repo": repo_target}, config=config)
         return ChatResponse(
             route=result.get("route", "codebase"),
             answer=result.get("generation", "No answer generated."),

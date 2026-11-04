@@ -63,6 +63,19 @@ def chunk_markdown(content: str, filepath: str, repo_name: str) -> List[Dict[str
 
     return sections
 
+PY_CONTAINER_NODES = {
+    'module', 'block', 'decorated_definition', 'class_definition',
+    'function_definition', 'async_function_definition', 'if_statement',
+    'for_statement', 'while_statement', 'try_statement', 'with_statement'
+}
+
+JS_CONTAINER_NODES = {
+    'program', 'statement_block', 'export_statement', 'export_default_declaration',
+    'class_declaration', 'class_body', 'method_definition', 'function_declaration',
+    'generator_function_declaration', 'interface_declaration', 'if_statement',
+    'for_statement', 'for_in_statement', 'while_statement', 'try_statement', 'catch_clause'
+}
+
 def extract_python_blocks(content: str, code_bytes: bytes, filepath: str, repo_name: str) -> List[Dict[str, Any]]:
     tree = py_parser.parse(code_bytes)
     chunks = []
@@ -88,7 +101,8 @@ def extract_python_blocks(content: str, code_bytes: bytes, filepath: str, repo_n
                 "repo": repo_name
             })
             for child in node.children:
-                traverse(child, current_class=class_name)
+                if child.type in PY_CONTAINER_NODES:
+                    traverse(child, current_class=class_name)
         elif node_type in ('function_definition', 'async_function_definition'):
             name_node = node.child_by_field_name('name')
             fn_name = name_node.text.decode('utf-8', errors="ignore") if name_node else "unknown"
@@ -105,10 +119,12 @@ def extract_python_blocks(content: str, code_bytes: bytes, filepath: str, repo_n
                 "repo": repo_name
             })
             for child in node.children:
-                traverse(child, current_class=current_class)
+                if child.type in PY_CONTAINER_NODES:
+                    traverse(child, current_class=current_class)
         else:
             for child in node.children:
-                traverse(child, current_class=current_class)
+                if child.type in PY_CONTAINER_NODES:
+                    traverse(child, current_class=current_class)
 
     traverse(tree.root_node)
     return chunks
@@ -139,7 +155,8 @@ def extract_js_ts_blocks(content: str, code_bytes: bytes, filepath: str, repo_na
                 "repo": repo_name
             })
             for child in node.children:
-                traverse(child, current_class=class_name)
+                if child.type in JS_CONTAINER_NODES:
+                    traverse(child, current_class=class_name)
         elif node_type in ('method_definition', 'public_field_definition'):
             name_node = node.child_by_field_name('name')
             fn_name = name_node.text.decode('utf-8', errors="ignore") if name_node else "unknown"
@@ -156,7 +173,8 @@ def extract_js_ts_blocks(content: str, code_bytes: bytes, filepath: str, repo_na
                 "repo": repo_name
             })
             for child in node.children:
-                traverse(child, current_class=current_class)
+                if child.type in JS_CONTAINER_NODES:
+                    traverse(child, current_class=current_class)
         elif node_type in ('function_declaration', 'generator_function_declaration'):
             name_node = node.child_by_field_name('name')
             fn_name = name_node.text.decode('utf-8', errors="ignore") if name_node else "unknown"
@@ -173,7 +191,8 @@ def extract_js_ts_blocks(content: str, code_bytes: bytes, filepath: str, repo_na
                 "repo": repo_name
             })
             for child in node.children:
-                traverse(child, current_class=current_class)
+                if child.type in JS_CONTAINER_NODES:
+                    traverse(child, current_class=current_class)
         elif node_type in ('interface_declaration', 'type_alias_declaration'):
             name_node = node.child_by_field_name('name')
             decl_name = name_node.text.decode('utf-8', errors="ignore") if name_node else "type"
@@ -190,38 +209,42 @@ def extract_js_ts_blocks(content: str, code_bytes: bytes, filepath: str, repo_na
             })
         else:
             for child in node.children:
-                traverse(child, current_class=current_class)
+                if child.type in JS_CONTAINER_NODES:
+                    traverse(child, current_class=current_class)
 
     traverse(tree.root_node)
     return chunks
 
 def extract_code_blocks(filepath: str, repo_name: str = "codebase") -> List[Dict[str, Any]]:
     try:
-        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
-            content = f.read()
+        with open(filepath, "rb") as f:
+            code_bytes = f.read()
     except Exception as e:
         print(f"Error reading {filepath}: {e}")
         return []
 
-    if not content.strip():
+    if not code_bytes.strip():
         return []
 
     ext = os.path.splitext(filepath)[1].lower()
-    code_bytes = content.encode("utf-8")
+    content = None
 
     if ext == ".md":
+        content = code_bytes.decode("utf-8", errors="ignore")
         return chunk_markdown(content, filepath, repo_name)
     elif ext == ".py":
-        blocks = extract_python_blocks(content, code_bytes, filepath, repo_name)
+        blocks = extract_python_blocks("", code_bytes, filepath, repo_name)
     elif ext in (".js", ".jsx", ".mjs", ".cjs"):
-        blocks = extract_js_ts_blocks(content, code_bytes, filepath, repo_name, is_ts=False)
+        blocks = extract_js_ts_blocks("", code_bytes, filepath, repo_name, is_ts=False)
     elif ext in (".ts", ".tsx"):
-        blocks = extract_js_ts_blocks(content, code_bytes, filepath, repo_name, is_ts=True)
+        blocks = extract_js_ts_blocks("", code_bytes, filepath, repo_name, is_ts=True)
     else:
         blocks = []
 
     # Fallback for procedural scripts, HTML/CSS/C/C++/Java, or files without top-level classes/functions
-    if not blocks and content.strip():
+    if not blocks and code_bytes.strip():
+        if content is None:
+            content = code_bytes.decode("utf-8", errors="ignore")
         lines = content.splitlines()
         fname = os.path.basename(filepath)
         window = 80

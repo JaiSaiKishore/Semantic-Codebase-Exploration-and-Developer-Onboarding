@@ -12,10 +12,12 @@ if not exist ".env" (
     exit /b 1
 )
 
+set PYTHON_EXE=python
 if exist "venv\Scripts\python.exe" (
-    set PYTHON_EXE=venv\Scripts\python.exe
-) else (
-    set PYTHON_EXE=python
+    "%~dp0venv\Scripts\python.exe" --version >nul 2>&1
+    if not errorlevel 1 (
+        set PYTHON_EXE=venv\Scripts\python.exe
+    )
 )
 
 echo [1/2] Launching browser at http://localhost:8000 ...

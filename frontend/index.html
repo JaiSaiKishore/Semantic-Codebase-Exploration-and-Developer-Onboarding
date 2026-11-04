@@ -111,6 +111,7 @@
       padding: 0.55rem 0.65rem; border-radius: 0.65rem;
       color: var(--on-surface-variant); font-size: 0.82rem; cursor: pointer;
       transition: all 0.15s ease; border: 1px solid transparent;
+      gap: 0.4rem;
     }
     .history-item:hover {
       background: rgba(255, 255, 255, 0.04);
@@ -122,10 +123,24 @@
       color: var(--primary);
     }
     .history-item .title-box {
-      display: flex; align-items: center; gap: 0.5rem; overflow: hidden;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; overflow: hidden; flex: 1; min-width: 0;
+    }
+    .history-item .title-row {
+      display: flex; align-items: center; gap: 0.4rem; width: 100%; overflow: hidden;
     }
     .history-item .title-text {
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 11rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; font-size: 0.8rem;
+    }
+    .history-item .repo-tag {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      font-family: var(--mono); font-size: 0.65rem; padding: 0.1rem 0.38rem;
+      border-radius: 0.35rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .history-item .repo-tag.tag-indexed {
+      background: rgba(74, 222, 128, 0.08); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.22);
+    }
+    .history-item .repo-tag.tag-empty {
+      background: rgba(255, 255, 255, 0.03); color: var(--outline); border: 1px solid rgba(255, 255, 255, 0.06);
     }
     .btn-del-chat {
       background: transparent; border: none; color: var(--outline);
@@ -277,6 +292,10 @@
     .repo-step-pill.active {
       background: rgba(255, 185, 95, 0.14); color: #ffb95f;
       border-color: rgba(255, 185, 95, 0.4); font-weight: 600;
+    }
+    .repo-step-pill.error {
+      background: rgba(255, 180, 171, 0.16); color: #ffb4ab;
+      border-color: rgba(255, 180, 171, 0.45); font-weight: 600;
     }
     .repo-step-pill.done {
       background: rgba(76, 215, 246, 0.12); color: #4cd7f6;
@@ -461,6 +480,823 @@
 
     @keyframes pulseGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
     .thinking-pulse { animation: pulseGlow 1.5s infinite; }
+
+    /* Header Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--surface-low);
+      padding: 0.25rem;
+      border-radius: 0.65rem;
+      border: 1px solid var(--border);
+    }
+    .nav-tab {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.5rem;
+      border: none;
+      background: transparent;
+      color: var(--outline);
+      font-family: var(--body);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .nav-tab:hover {
+      color: var(--on-surface);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .nav-tab.active {
+      background: rgba(208, 188, 255, 0.15);
+      color: var(--primary);
+      font-weight: 600;
+      border: 1px solid rgba(208, 188, 255, 0.25);
+    }
+
+    /* Architecture Intelligence Hub Styles */
+    #architecture-view {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2.25rem 4rem;
+      position: relative;
+    }
+    .arch-container {
+      max-width: 76rem;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .arch-header-card {
+      background: rgba(26, 27, 34, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1rem;
+      padding: 1.35rem 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+    }
+    .arch-repo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.2rem 0.65rem;
+      background: rgba(208, 188, 255, 0.08);
+      border: 1px solid rgba(208, 188, 255, 0.2);
+      border-radius: 9999px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--primary);
+      margin-bottom: 0.35rem;
+    }
+    .arch-pill-tag {
+      background: rgba(76, 215, 246, 0.15);
+      color: #4cd7f6;
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.25rem;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .arch-title-group h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--on-surface);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .arch-title-group p {
+      color: var(--on-surface-variant);
+      font-size: 0.82rem;
+      margin-top: 0.25rem;
+    }
+    .arch-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+    .btn-arch-action {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: 0.6rem;
+      background: rgba(208, 188, 255, 0.08);
+      border: 1px solid rgba(208, 188, 255, 0.22);
+      color: var(--primary);
+      font-family: var(--body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-arch-action:hover {
+      background: rgba(208, 188, 255, 0.18);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+    .btn-arch-primary {
+      background: linear-gradient(135deg, rgba(208, 188, 255, 0.22), rgba(160, 120, 255, 0.25));
+      border: 1px solid rgba(208, 188, 255, 0.4);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(160, 120, 255, 0.2);
+    }
+    .btn-arch-primary:hover {
+      background: linear-gradient(135deg, rgba(208, 188, 255, 0.32), rgba(160, 120, 255, 0.38));
+      border-color: var(--primary);
+      box-shadow: 0 0 18px rgba(160, 120, 255, 0.35);
+    }
+
+    /* Sub-Navigation Bar */
+    .arch-subnav-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(18, 19, 24, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 0.75rem;
+      padding: 0.3rem;
+      flex-wrap: wrap;
+    }
+    .arch-subnav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.42rem 0.85rem;
+      border-radius: 0.55rem;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--outline);
+      font-family: var(--body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .arch-subnav-btn:hover {
+      color: var(--on-surface);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .arch-subnav-btn.active {
+      background: rgba(208, 188, 255, 0.14);
+      color: var(--primary);
+      border-color: rgba(208, 188, 255, 0.3);
+      font-weight: 600;
+    }
+    .subnav-badge {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 9999px;
+      background: rgba(255, 180, 171, 0.2);
+      color: #ffb4ab;
+    }
+
+    /* KPI Metrics Bar */
+    .arch-metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+      gap: 0.85rem;
+      width: 100%;
+    }
+    .arch-metric-card {
+      background: rgba(26, 27, 34, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 0.85rem;
+      padding: 1rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .arch-metric-card:hover {
+      border-color: rgba(208, 188, 255, 0.25);
+      background: rgba(30, 31, 40, 0.85);
+      transform: translateY(-1px);
+    }
+    .arch-metric-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .arch-metric-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--outline);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .metric-icon-hint {
+      font-size: 15px;
+      color: var(--outline);
+      opacity: 0.6;
+      cursor: help;
+      transition: opacity 0.15s ease;
+    }
+    .metric-icon-hint:hover {
+      opacity: 1;
+      color: var(--primary);
+    }
+    .arch-metric-value {
+      font-family: var(--mono);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--tertiary);
+    }
+    .arch-metric-expl {
+      font-size: 0.72rem;
+      color: var(--outline);
+      line-height: 1.4;
+      margin-top: 0.25rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 0.35rem;
+    }
+
+    .arch-health-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      width: fit-content;
+    }
+    .health-good {
+      background: rgba(74, 222, 128, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(74, 222, 128, 0.35);
+    }
+    .health-warning {
+      background: rgba(255, 185, 95, 0.15);
+      color: #ffb95f;
+      border: 1px solid rgba(255, 185, 95, 0.35);
+    }
+    .health-danger {
+      background: rgba(255, 180, 171, 0.15);
+      color: #ffb4ab;
+      border: 1px solid rgba(255, 180, 171, 0.35);
+    }
+    
+    .arch-card {
+      background: rgba(26, 27, 34, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 1rem;
+      padding: 1.35rem 1.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    .arch-card-title {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: var(--on-surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 0.75rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .arch-card-title span {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Explanation Banner for Sections */
+    .arch-section-expl {
+      background: rgba(76, 215, 246, 0.05);
+      border: 1px solid rgba(76, 215, 246, 0.16);
+      border-radius: 0.65rem;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      font-size: 0.78rem;
+      color: var(--on-surface-variant);
+      line-height: 1.45;
+    }
+    .arch-section-expl .material-symbols-outlined {
+      color: var(--tertiary);
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .arch-section-expl strong {
+      color: var(--on-surface);
+      font-weight: 600;
+    }
+    
+    .patterns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+      gap: 1rem;
+    }
+    .pattern-card {
+      background: var(--surface-container);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 0.75rem;
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      transition: all 0.2s ease;
+    }
+    .pattern-card:hover {
+      border-color: rgba(208, 188, 255, 0.35);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+    .pattern-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pattern-card-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .confidence-meter {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--tertiary);
+      background: rgba(76, 215, 246, 0.12);
+      border: 1px solid rgba(76, 215, 246, 0.3);
+      padding: 0.15rem 0.5rem;
+      border-radius: 0.35rem;
+    }
+    .pattern-desc {
+      font-size: 0.8rem;
+      color: var(--on-surface-variant);
+      line-height: 1.45;
+    }
+    .pattern-evidence-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      color: var(--on-surface-variant);
+      margin-top: 0.25rem;
+    }
+    .pattern-evidence-list li {
+      padding-left: 0.85rem;
+      position: relative;
+    }
+    .pattern-evidence-list li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--secondary);
+    }
+
+    .layers-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .layer-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      background: var(--surface-container);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 0.9rem 1.15rem;
+    }
+    .layer-badge {
+      min-width: 10.5rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 0.35rem 0.65rem;
+      border-radius: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .layer-presentation { background: rgba(208, 188, 255, 0.15); color: #d0bcff; border: 1px solid rgba(208, 188, 255, 0.3); }
+    .layer-application { background: rgba(76, 215, 246, 0.15); color: #4cd7f6; border: 1px solid rgba(76, 215, 246, 0.3); }
+    .layer-domain { background: rgba(255, 185, 95, 0.15); color: #ffb95f; border: 1px solid rgba(255, 185, 95, 0.3); }
+    .layer-infrastructure { background: rgba(147, 197, 253, 0.15); color: #93c5fd; border: 1px solid rgba(147, 197, 253, 0.3); }
+    .layer-shared { background: rgba(203, 195, 215, 0.15); color: #cbc3d7; border: 1px solid rgba(203, 195, 215, 0.3); }
+    .layer-modules-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      flex: 1;
+      align-items: center;
+    }
+    .module-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      padding: 0.25rem 0.55rem;
+      border-radius: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.73rem;
+      color: var(--on-surface);
+    }
+
+    /* Table Toolbar & Search */
+    .arch-table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .arch-search-input {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 0.5rem;
+      padding: 0.45rem 0.8rem;
+      font-family: var(--body);
+      font-size: 0.78rem;
+      color: var(--on-surface);
+      width: 15rem;
+      transition: all 0.2s ease;
+    }
+    .arch-search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.07);
+    }
+    .arch-filter-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .arch-filter-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.4rem;
+      padding: 0.25rem 0.65rem;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--outline);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .arch-filter-btn:hover {
+      color: var(--on-surface);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .arch-filter-btn.active {
+      background: rgba(208, 188, 255, 0.16);
+      color: var(--primary);
+      border-color: rgba(208, 188, 255, 0.4);
+      font-weight: 600;
+    }
+
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 0.65rem;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .violations-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .violations-table th {
+      background: rgba(255, 255, 255, 0.03);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--outline);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      text-align: left;
+      padding: 0.75rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .violations-table td {
+      padding: 0.8rem 0.9rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      vertical-align: middle;
+    }
+    .violations-table tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .sev-badge {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 0.35rem;
+      display: inline-block;
+    }
+    .sev-HIGH { background: rgba(255, 180, 171, 0.2); color: #ffb4ab; border: 1px solid rgba(255, 180, 171, 0.45); }
+    .sev-MEDIUM { background: rgba(255, 185, 95, 0.2); color: #ffb95f; border: 1px solid rgba(255, 185, 95, 0.45); }
+    .sev-LOW { background: rgba(76, 215, 246, 0.2); color: #4cd7f6; border: 1px solid rgba(76, 215, 246, 0.45); }
+
+    /* Instability metric badges */
+    .inst-badge {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.45rem;
+      border-radius: 0.3rem;
+      display: inline-block;
+    }
+    .inst-stable {
+      background: rgba(74, 222, 128, 0.12);
+      color: #4ade80;
+      border: 1px solid rgba(74, 222, 128, 0.3);
+    }
+    .inst-balanced {
+      background: rgba(76, 215, 246, 0.12);
+      color: #4cd7f6;
+      border: 1px solid rgba(76, 215, 246, 0.3);
+    }
+    .inst-volatile {
+      background: rgba(255, 185, 95, 0.12);
+      color: #ffb95f;
+      border: 1px solid rgba(255, 185, 95, 0.3);
+    }
+
+    .btn-fix-prompt {
+      background: rgba(208, 188, 255, 0.1);
+      border: 1px solid rgba(208, 188, 255, 0.28);
+      color: var(--primary);
+      padding: 0.3rem 0.65rem;
+      border-radius: 0.45rem;
+      font-family: var(--body);
+      font-size: 0.74rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-fix-prompt:hover {
+      background: rgba(208, 188, 255, 0.22);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .conventions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+      gap: 1rem;
+    }
+    .convention-card {
+      background: var(--surface-container);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      transition: all 0.2s ease;
+    }
+    .convention-card:hover {
+      border-color: rgba(208, 188, 255, 0.25);
+    }
+    .convention-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--outline);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .convention-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--on-surface);
+    }
+    .convention-meta {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--tertiary);
+    }
+    .convention-bar {
+      height: 4px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 0.2rem;
+    }
+    .convention-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--tertiary));
+      border-radius: 2px;
+    }
+
+    .cycle-alert-box {
+      background: rgba(255, 180, 171, 0.08);
+      border: 1px solid rgba(255, 180, 171, 0.25);
+      border-radius: 0.75rem;
+      padding: 0.9rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .cycle-item {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: #ffb4ab;
+      padding-left: 0.5rem;
+      border-left: 2px solid #ffb4ab;
+    }
+    .clean-dag-box {
+      background: rgba(74, 222, 128, 0.08);
+      border: 1px solid rgba(74, 222, 128, 0.25);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.82rem;
+      color: #4ade80;
+    }
+
+    /* Floating Toast Notifications */
+    .arch-toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: rgba(22, 23, 29, 0.95);
+      border: 1px solid rgba(208, 188, 255, 0.35);
+      border-radius: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.82rem;
+      color: var(--on-surface);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(16px);
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(1rem);
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .arch-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .arch-toast.toast-success {
+      border-color: rgba(74, 222, 128, 0.4);
+      color: #4ade80;
+    }
+    .arch-toast.toast-error {
+      border-color: rgba(255, 180, 171, 0.45);
+      color: #ffb4ab;
+    }
+
+    /* Visual Architectural Layer Pipeline */
+    .arch-tier-pipeline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      background: rgba(18, 19, 24, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1.15rem;
+      overflow-x: auto;
+      margin-bottom: 0.5rem;
+    }
+    .tier-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 0.6rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      min-width: 7.2rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .tier-node:hover, .tier-node.selected {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+      background: rgba(208, 188, 255, 0.1);
+    }
+    .tier-node-name {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--on-surface);
+      text-transform: uppercase;
+    }
+    .tier-node-count {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--outline);
+    }
+    .tier-arrow {
+      color: var(--outline);
+      opacity: 0.45;
+      font-size: 18px;
+    }
+
+    /* Expandable Component Dependency Drawer */
+    .coupling-detail-row {
+      background: rgba(18, 19, 24, 0.85);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .coupling-detail-content {
+      padding: 0.85rem 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      font-size: 0.76rem;
+    }
+    @media (max-width: 768px) {
+      .coupling-detail-content { grid-template-columns: 1fr; }
+    }
+    .coupling-sub-section h5 {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--outline);
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .coupling-chips-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+    .coupling-chip-mini {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 0.3rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--on-surface);
+    }
+    .btn-toggle-expand {
+      background: transparent;
+      border: none;
+      color: var(--outline);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      transition: transform 0.2s ease, color 0.2s ease;
+      vertical-align: middle;
+      margin-right: 0.35rem;
+    }
+    .btn-toggle-expand:hover {
+      color: var(--primary);
+    }
+    .btn-toggle-expand.expanded {
+      transform: rotate(90deg);
+      color: var(--primary);
+    }
+
+    /* Health Score Breakdown Card */
+    .health-scorecard-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--outline);
+      margin-top: 0.35rem;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.45rem 0.65rem;
+      border-radius: 0.45rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .scorecard-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -504,6 +1340,17 @@
         <span class="material-symbols-outlined" style="font-size: 18px; color: var(--tertiary);">folder_open</span>
         <span id="header-repo-name" style="font-weight: 500;">No repository selected</span>
         <span id="header-repo-badge" class="badge-unset">Unset</span>
+      </div>
+
+      <div class="nav-tabs">
+        <button id="tab-btn-chat" class="nav-tab active" title="Conversational RAG Assistant">
+          <span class="material-symbols-outlined" style="font-size: 17px;">chat_bubble</span>
+          <span>Chat Assistant</span>
+        </button>
+        <button id="tab-btn-arch" class="nav-tab" title="Architecture Intelligence Hub">
+          <span class="material-symbols-outlined" style="font-size: 17px;">account_tree</span>
+          <span>Architecture Hub</span>
+        </button>
       </div>
 
       <div class="agent-status-pill">
@@ -637,6 +1484,281 @@
         </div>
       </div>
     </div>
+    <!-- Architecture Intelligence Hub View -->
+    <div id="architecture-view">
+      <div class="arch-container">
+        <!-- Architecture Header Banner -->
+        <div class="arch-header-card">
+          <div class="arch-title-group">
+            <div class="arch-repo-badge">
+              <span class="material-symbols-outlined" style="font-size: 15px; color: var(--primary);">folder_code</span>
+              <span id="arch-repo-pill-name">Active Repository</span>
+              <span class="arch-pill-tag">Indexed Model</span>
+            </div>
+            <h2>
+              <span class="material-symbols-outlined" style="color: var(--primary); font-size: 26px;">account_tree</span>
+              <span>Architecture Intelligence Hub</span>
+            </h2>
+            <p id="arch-subtitle">Static code structure analysis, layer boundary verification, and package coupling metrics.</p>
+          </div>
+          <div class="arch-actions">
+            <button id="btn-ask-arch-brief" class="btn-arch-action btn-arch-primary" title="Ask Agent for an executive architecture summary">
+              <span class="material-symbols-outlined" style="font-size: 16px;">neurology</span>
+              <span>Ask Architecture Advisor</span>
+            </button>
+            <button id="btn-refresh-arch" class="btn-arch-action" title="Re-scan and refresh architecture model">
+              <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span>
+              <span>Re-Analyze</span>
+            </button>
+            <button id="btn-export-arch" class="btn-arch-action" title="Export architecture model as JSON">
+              <span class="material-symbols-outlined" style="font-size: 16px;">data_object</span>
+              <span>Export JSON</span>
+            </button>
+            <button id="btn-export-md" class="btn-arch-action" title="Export executive architecture report as Markdown">
+              <span class="material-symbols-outlined" style="font-size: 16px;">description</span>
+              <span>Export Markdown</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty / Pending State -->
+        <div id="arch-empty-state" style="display: none; padding: 3.5rem 1rem; text-align: center; color: var(--outline);">
+          <span class="material-symbols-outlined" style="font-size: 48px; color: var(--secondary); margin-bottom: 0.5rem;">hourglass_empty</span>
+          <h3 style="font-size: 1.15rem; color: var(--on-surface);">No Architecture Model Loaded</h3>
+          <p style="font-size: 0.85rem; margin-top: 0.25rem;">Please select and index a repository first using the Chat tab.</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="arch-loading-state" style="display: none; padding: 3.5rem 1rem; text-align: center; color: var(--outline);">
+          <span class="material-symbols-outlined thinking-pulse" style="font-size: 48px; color: var(--tertiary); margin-bottom: 0.5rem;">neurology</span>
+          <h3 style="font-size: 1.15rem; color: var(--on-surface);">Analyzing Repository Architecture...</h3>
+          <p style="font-size: 0.85rem; margin-top: 0.25rem;">Extracting module dependencies, inferring layer boundaries, and checking conformance rules.</p>
+        </div>
+
+        <!-- Loaded Content Wrapper -->
+        <div id="arch-content" style="display: flex; flex-direction: column; gap: 1.5rem;">
+          
+          <!-- Sub-Navigation Bar -->
+          <div class="arch-subnav-bar">
+            <button class="arch-subnav-btn active" data-target="all">
+              <span class="material-symbols-outlined" style="font-size: 16px;">dashboard</span>
+              <span>Executive Overview</span>
+            </button>
+            <button class="arch-subnav-btn" data-target="section-patterns">
+              <span class="material-symbols-outlined" style="font-size: 16px;">grid_view</span>
+              <span>Patterns & Layers</span>
+            </button>
+            <button class="arch-subnav-btn" data-target="section-coupling">
+              <span class="material-symbols-outlined" style="font-size: 16px;">hub</span>
+              <span>Coupling Matrix</span>
+            </button>
+            <button class="arch-subnav-btn" data-target="section-violations">
+              <span class="material-symbols-outlined" style="font-size: 16px;">gavel</span>
+              <span>Boundary Violations</span>
+              <span id="subnav-violations-count" class="subnav-badge">0</span>
+            </button>
+            <button class="arch-subnav-btn" data-target="section-conventions">
+              <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
+              <span>Code Conventions</span>
+            </button>
+          </div>
+
+          <!-- Key Metrics Grid -->
+          <div class="arch-metrics-bar">
+            <div class="arch-metric-card">
+              <div class="arch-metric-header">
+                <span class="arch-metric-label">Dominant Paradigm</span>
+                <span class="material-symbols-outlined metric-icon-hint" title="Inferred from folder structure, AST classes, and cross-module imports">info</span>
+              </div>
+              <span id="metric-dominant-pattern" class="arch-metric-value" style="font-size: 1.05rem; color: var(--primary);">Detecting...</span>
+              <p class="arch-metric-expl">Primary structural pattern inferred via AST symbol distribution and imports.</p>
+            </div>
+
+            <div class="arch-metric-card">
+              <div class="arch-metric-header">
+                <span class="arch-metric-label">Health & Integrity</span>
+                <span class="material-symbols-outlined metric-icon-hint" title="Composite 0-100 score penalizing cycles (-10) and boundary violations (-15 High, -5 Med)">info</span>
+              </div>
+              <div id="metric-health-container" style="margin-top: 0.15rem;">
+                <span id="metric-health-badge" class="arch-health-badge health-good">100/100 Clean</span>
+              </div>
+              <p class="arch-metric-expl">Composite score factoring cycle-free DAG topology and boundary conformance.</p>
+            </div>
+
+            <div class="arch-metric-card">
+              <div class="arch-metric-header">
+                <span class="arch-metric-label">Modularity & Edges</span>
+                <span class="material-symbols-outlined metric-icon-hint" title="Number of distinct modular components and directional dependencies between them">info</span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 0.4rem;">
+                <span id="metric-total-modules" class="arch-metric-value">0</span>
+                <span style="font-size: 0.78rem; color: var(--outline);">modules</span>
+                <span style="color: var(--outline); font-size: 0.75rem;">•</span>
+                <span id="metric-total-edges" class="arch-metric-value" style="font-size: 1.05rem; color: var(--tertiary);">0</span>
+                <span style="font-size: 0.78rem; color: var(--outline);">edges</span>
+              </div>
+              <p class="arch-metric-expl">Total codebase modules and directed dependency connections mapped.</p>
+            </div>
+
+            <div class="arch-metric-card">
+              <div class="arch-metric-header">
+                <span class="arch-metric-label">Cyclic Integrity</span>
+                <span class="material-symbols-outlined metric-icon-hint" title="Cycles are mutual dependencies (A → B → A) that create tight coupling and test friction">info</span>
+              </div>
+              <span id="metric-circular-count" class="arch-metric-value" style="color: #4ade80;">0</span>
+              <p class="arch-metric-expl">Circular dependency loops. 0 represents a clean Directed Acyclic Graph (DAG).</p>
+            </div>
+          </div>
+
+          <!-- Section 1: Discovered Patterns & Layer Abstraction Boundaries -->
+          <div id="section-patterns" class="arch-card arch-section-block">
+            <div class="arch-card-title">
+              <span>
+                <span class="material-symbols-outlined" style="color: var(--primary);">grid_view</span>
+                <span>Architectural Patterns & Layer Topology</span>
+              </span>
+              <span id="patterns-count-pill" class="pill pill-cyan">0 Patterns</span>
+            </div>
+
+            <div class="arch-section-expl">
+              <span class="material-symbols-outlined">info</span>
+              <div>
+                <strong>What are Patterns & Layers?</strong>
+                Architecture patterns define how components are divided into tiers (Presentation → Application → Domain → Infrastructure → Shared). Higher layers coordinate application workflows, while domain business rules remain isolated from UI and external infrastructure adapters.
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+              <span style="font-family: var(--mono); font-size: 0.73rem; color: var(--outline); text-transform: uppercase; letter-spacing: 0.05em;">Detected Architectural Paradigms</span>
+              <div id="patterns-grid" class="patterns-grid"></div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-family: var(--mono); font-size: 0.73rem; color: var(--outline); text-transform: uppercase; letter-spacing: 0.05em;">Interactive Layer Pipeline & Hierarchy</span>
+                <span style="font-family: var(--mono); font-size: 0.7rem; color: var(--outline);">Click a tier to filter or inspect</span>
+              </div>
+              <div id="arch-tier-pipeline" class="arch-tier-pipeline"></div>
+              <div id="layers-stack" class="layers-stack"></div>
+            </div>
+          </div>
+
+          <!-- Section 2: Dependency Graph & Coupling Analysis -->
+          <div id="section-coupling" class="arch-card arch-section-block">
+            <div class="arch-card-title">
+              <span>
+                <span class="material-symbols-outlined" style="color: var(--tertiary);">hub</span>
+                <span>Component Coupling & Stability Matrix</span>
+              </span>
+              <span style="font-family: var(--mono); font-size: 0.72rem; color: var(--outline);">Ca (Fan-in) • Ce (Fan-out) • Instability (I)</span>
+            </div>
+
+            <div class="arch-section-expl">
+              <span class="material-symbols-outlined">info</span>
+              <div>
+                <strong>Understanding Robert C. Martin's Package Coupling Metrics:</strong>
+                <div style="margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                  <div>• <strong>Afferent Coupling (Ca):</strong> Inbound dependencies — how many other modules depend on this component. High Ca means high responsibility (harder to change without breaking callers).</div>
+                  <div>• <strong>Efferent Coupling (Ce):</strong> Outbound dependencies — how many external modules this component calls. High Ce means high sensitivity to external changes.</div>
+                  <div>• <strong>Instability Index (I = Ce / (Ca + Ce)):</strong> Ranges from <strong>0.0 (Maximally Stable)</strong> for core business entities to <strong>1.0 (Maximally Volatile/Flexible)</strong> for entry controllers.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Circular Cycles Warning Box -->
+            <div id="circular-cycles-container"></div>
+
+            <!-- Table Toolbar with Search -->
+            <div class="arch-table-toolbar">
+              <span style="font-family: var(--mono); font-size: 0.74rem; color: var(--outline); text-transform: uppercase; letter-spacing: 0.04em;">Top Coupled Components</span>
+              <input type="text" id="coupling-search-input" class="arch-search-input" placeholder="Search module or layer..." />
+            </div>
+
+            <!-- Module Coupling Table -->
+            <div class="table-container" style="max-height: 20rem; overflow-y: auto;">
+              <table class="violations-table">
+                <thead>
+                  <tr>
+                    <th>Component Name</th>
+                    <th>Layer</th>
+                    <th title="Inbound callers (Responsibility)">Afferent (Ca)</th>
+                    <th title="Outbound calls (Dependencies)">Efferent (Ce)</th>
+                    <th title="Instability = Ce / (Ca + Ce)">Instability (I)</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="coupling-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 3: Conformance Checking & Violations Auditor -->
+          <div id="section-violations" class="arch-card arch-section-block">
+            <div class="arch-card-title">
+              <span>
+                <span class="material-symbols-outlined" style="color: var(--error);">gavel</span>
+                <span>Architectural Boundary Conformance & Auditor</span>
+              </span>
+              <span id="violations-count-badge" class="pill pill-error">0 Violations</span>
+            </div>
+
+            <div class="arch-section-expl">
+              <span class="material-symbols-outlined">info</span>
+              <div>
+                <strong>What is Conformance Auditing?</strong>
+                A static analysis engine that verifies import statements obey clean architecture boundaries (e.g., Domain logic must never import Presentation controllers or Infrastructure drivers). Violations indicate abstraction leaks and architectural drift.
+              </div>
+            </div>
+
+            <!-- Table Toolbar with Severity Filters -->
+            <div class="arch-table-toolbar">
+              <span style="font-family: var(--mono); font-size: 0.74rem; color: var(--outline); text-transform: uppercase; letter-spacing: 0.04em;">Audited Violations</span>
+              <div class="arch-filter-pills">
+                <button class="arch-filter-btn active" data-severity="ALL">All (<span id="filter-count-all">0</span>)</button>
+                <button class="arch-filter-btn" data-severity="HIGH">High (<span id="filter-count-high">0</span>)</button>
+                <button class="arch-filter-btn" data-severity="MEDIUM">Medium (<span id="filter-count-med">0</span>)</button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="violations-table">
+                <thead>
+                  <tr>
+                    <th>Severity</th>
+                    <th>Rule Violation</th>
+                    <th>Location</th>
+                    <th>Description & Remediation</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="violations-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 4: Repository Conventions & Idioms -->
+          <div id="section-conventions" class="arch-card arch-section-block">
+            <div class="arch-card-title">
+              <span>
+                <span class="material-symbols-outlined" style="color: #4ade80;">verified</span>
+                <span>Repository-Specific Coding Conventions & Idioms</span>
+              </span>
+              <span style="font-family: var(--mono); font-size: 0.72rem; color: var(--outline);">Syntactic & Paradigm Mining</span>
+            </div>
+
+            <div class="arch-section-expl">
+              <span class="material-symbols-outlined">info</span>
+              <div>
+                <strong>What is Convention Mining?</strong>
+                Syntactic analysis that scans all repository AST definitions to quantify team-wide engineering consistency in naming patterns, asynchronous execution models, and defensive error-handling density per 1,000 lines of code.
+              </div>
+            </div>
+
+            <div id="conventions-grid" class="conventions-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -670,16 +1792,57 @@
     const btnSend = document.getElementById('btn-send');
     const chatScroll = document.getElementById('chat-scroll');
 
+    const tabBtnChat = document.getElementById('tab-btn-chat');
+    const tabBtnArch = document.getElementById('tab-btn-arch');
+    const architectureView = document.getElementById('architecture-view');
+    const inputDock = document.getElementById('input-dock');
+    const btnRefreshArch = document.getElementById('btn-refresh-arch');
+    const btnExportArch = document.getElementById('btn-export-arch');
+    const btnExportMd = document.getElementById('btn-export-md');
+    const btnAskArchBrief = document.getElementById('btn-ask-arch-brief');
+    const archRepoPillName = document.getElementById('arch-repo-pill-name');
+
+    const archEmptyState = document.getElementById('arch-empty-state');
+    const archLoadingState = document.getElementById('arch-loading-state');
+    const archContent = document.getElementById('arch-content');
+    const archSubtitle = document.getElementById('arch-subtitle');
+
+    const metricDominantPattern = document.getElementById('metric-dominant-pattern');
+    const metricHealthBadge = document.getElementById('metric-health-badge');
+    const metricTotalModules = document.getElementById('metric-total-modules');
+    const metricTotalEdges = document.getElementById('metric-total-edges');
+    const metricCircularCount = document.getElementById('metric-circular-count');
+
+    const patternsGrid = document.getElementById('patterns-grid');
+    const patternsCountPill = document.getElementById('patterns-count-pill');
+    const layersStack = document.getElementById('layers-stack');
+    const circularCyclesContainer = document.getElementById('circular-cycles-container');
+    const couplingTableBody = document.getElementById('coupling-table-body');
+    const couplingSearchInput = document.getElementById('coupling-search-input');
+    const violationsTableBody = document.getElementById('violations-table-body');
+    const violationsCountBadge = document.getElementById('violations-count-badge');
+    const subnavViolationsCount = document.getElementById('subnav-violations-count');
+    const filterCountAll = document.getElementById('filter-count-all');
+    const filterCountHigh = document.getElementById('filter-count-high');
+    const filterCountMed = document.getElementById('filter-count-med');
+    const conventionsGrid = document.getElementById('conventions-grid');
+
+    let currentArchitectureData = null;
+    const architectureCacheByRepo = new Map();
+    let currentActiveTab = 'chat';
+
     function normalizeRepoIdentifier(url) {
       if (!url) return '';
-      let clean = url.trim().replace(/\.git$/, '');
+      let clean = url.trim().split('?')[0].split('#')[0].replace(/\.git$/, '');
       if (clean.includes('github.com/')) {
         clean = clean.split('github.com/')[1];
+      } else if (clean.includes('github.com:')) {
+        clean = clean.split('github.com:')[1];
       }
       clean = clean.replace(/^\/+|\/+$/g, '');
       const parts = clean.split('/');
       if (parts.length >= 2) {
-        return `${parts[parts.length - 2]}/${parts[parts.length - 1]}`;
+        return `${parts[0]}/${parts[1]}`;
       }
       return clean;
     }
@@ -704,6 +1867,11 @@
       renderSidebarHistory();
       renderActiveConversation();
       setupEventListeners();
+
+      const activeConv = getActiveConv();
+      if (activeConv && (activeConv.repoName || activeConv.repoUrl)) {
+        checkExistingRepoStatus(activeConv.repoName || activeConv.repoUrl);
+      }
     }
 
     function loadIndexedRepositories() {
@@ -749,22 +1917,42 @@
       repoProgressBox.style.display = 'flex';
       repoProgressStage.textContent = stageText || 'Processing...';
       repoProgressStage.style.color = isError ? '#ffb4ab' : isDone ? '#4cd7f6' : '#ffb95f';
-      repoProgressPct.textContent = `${pct}%`;
-      repoProgressFill.style.width = `${pct}%`;
-      repoProgressFill.style.background = isError
-        ? '#ffb4ab'
-        : isDone
-          ? 'linear-gradient(90deg, #4cd7f6, #4ade80)'
-          : 'linear-gradient(90deg, var(--primary), var(--tertiary))';
+
+      if (isError) {
+        repoProgressPct.textContent = '✕ Failed';
+        repoProgressPct.style.color = '#ffb4ab';
+        const fillWidth = Math.max(pct || 15, 10);
+        repoProgressFill.style.width = `${Math.min(fillWidth, 85)}%`;
+        repoProgressFill.style.background = '#ffb4ab';
+      } else if (isDone) {
+        repoProgressPct.textContent = '100%';
+        repoProgressPct.style.color = '#4cd7f6';
+        repoProgressFill.style.width = '100%';
+        repoProgressFill.style.background = 'linear-gradient(90deg, #4cd7f6, #4ade80)';
+      } else {
+        repoProgressPct.textContent = `${pct}%`;
+        repoProgressPct.style.color = 'var(--tertiary)';
+        repoProgressFill.style.width = `${pct}%`;
+        repoProgressFill.style.background = 'linear-gradient(90deg, var(--primary), var(--tertiary))';
+      }
+
       repoProgressDetail.textContent = detailText || '';
 
       for (let i = 1; i <= 4; i++) {
         const pill = document.getElementById(`step-pill-${i}`);
         if (!pill) continue;
         pill.className = 'repo-step-pill';
-        if (isDone || i < step) {
+        if (isDone) {
           pill.classList.add('done');
-        } else if (i === step && !isError) {
+        } else if (isError) {
+          if (i === step) {
+            pill.classList.add('error');
+          } else if (i < step) {
+            pill.classList.add('done');
+          }
+        } else if (i < step) {
+          pill.classList.add('done');
+        } else if (i === step) {
           pill.classList.add('active');
         }
       }
@@ -825,6 +2013,77 @@
         dockTextarea.style.height = 'auto';
         dockTextarea.style.height = Math.min(dockTextarea.scrollHeight, 128) + 'px';
       });
+
+      if (tabBtnChat) tabBtnChat.addEventListener('click', () => switchTab('chat'));
+      if (tabBtnArch) tabBtnArch.addEventListener('click', () => switchTab('arch'));
+      if (btnRefreshArch) btnRefreshArch.addEventListener('click', () => loadArchitectureDashboard(true));
+      if (btnExportArch) btnExportArch.addEventListener('click', exportArchitectureJson);
+      if (btnExportMd) btnExportMd.addEventListener('click', exportArchitectureMarkdown);
+
+      if (btnAskArchBrief) {
+        btnAskArchBrief.addEventListener('click', () => {
+          const current = getActiveConv();
+          const repo = current.repoName || normalizeRepoIdentifier(current.repoUrl) || 'the repository';
+          switchTab('chat');
+          const prompt = `Provide an executive architectural briefing for ${repo}:\n1. Explain the dominant structural pattern and how responsibility is partitioned across layers.\n2. Identify the most critical afferent (Ca) and efferent (Ce) coupling points and stability risks.\n3. Summarize any circular dependencies or boundary rule violations detected.\n4. Recommend the top 3 actionable architectural refactoring priorities.`;
+          dockTextarea.value = prompt;
+          dockTextarea.focus();
+          sendMessage(prompt);
+        });
+      }
+
+      // Sub-navigation view filtering
+      const subnavBtns = document.querySelectorAll('.arch-subnav-btn');
+      subnavBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          subnavBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const target = btn.dataset.target;
+          const sections = document.querySelectorAll('.arch-section-block');
+          sections.forEach(sec => {
+            if (target === 'all' || sec.id === target) {
+              sec.style.display = 'flex';
+            } else {
+              sec.style.display = 'none';
+            }
+          });
+        });
+      });
+
+      // Real-time coupling table search
+      if (couplingSearchInput) {
+        couplingSearchInput.addEventListener('input', (e) => {
+          const term = e.target.value.toLowerCase().trim();
+          const rows = couplingTableBody.querySelectorAll('tr');
+          rows.forEach(r => {
+            const modName = (r.children[0]?.textContent || '').toLowerCase();
+            const layerName = (r.children[1]?.textContent || '').toLowerCase();
+            if (!term || modName.includes(term) || layerName.includes(term)) {
+              r.style.display = '';
+            } else {
+              r.style.display = 'none';
+            }
+          });
+        });
+      }
+
+      // Conformance severity filters
+      const filterBtns = document.querySelectorAll('.arch-filter-btn');
+      filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const sev = btn.dataset.severity;
+          const rows = violationsTableBody.querySelectorAll('tr[data-severity]');
+          rows.forEach(r => {
+            if (sev === 'ALL' || r.dataset.severity === sev) {
+              r.style.display = '';
+            } else {
+              r.style.display = 'none';
+            }
+          });
+        });
+      });
     }
 
     function handleNewChat() {
@@ -843,7 +2102,156 @@
       resetRepoBoxUI();
       renderSidebarHistory();
       renderActiveConversation();
+      if (currentActiveTab === 'arch') {
+        loadArchitectureDashboard();
+      }
       repoInput.focus();
+    }
+
+    let pollErrorCount = 0;
+
+    function startRepoStatusPolling(repoName, targetConvId) {
+      if (repoPollInterval) clearInterval(repoPollInterval);
+      pollErrorCount = 0;
+
+      repoPollInterval = setInterval(async () => {
+        try {
+          const sRes = await fetch(`${API_BASE_URL}/api/repository/status?repo_name=${encodeURIComponent(repoName)}`);
+          if (!sRes.ok) throw new Error(`HTTP ${sRes.status}`);
+          const sData = await sRes.json();
+          pollErrorCount = 0; // Reset error count on successful poll
+
+          // Persist repo name to the target conversation
+          const targetConv = conversations.find(c => c.id === targetConvId);
+          if (targetConv && !targetConv.repoName) {
+            targetConv.repoName = repoName;
+            saveToStorage();
+          }
+
+          const isActive = (activeId === targetConvId);
+
+          if (sData.status === 'ready') {
+            clearInterval(repoPollInterval);
+            repoPollInterval = null;
+            if (targetConv) {
+              targetConv.repoName = repoName;
+              saveToStorage();
+            }
+            renderSidebarHistory();
+
+            if (isActive) {
+              updatePipelineProgressUI(
+                4,
+                100,
+                `✓ Repository ${repoName} indexed and ready!`,
+                `Stored ${sData.code_chunks || 0} AST code chunks & ${sData.history_chunks || 0} GitHub issue/PR chunks. You can now ask questions below.`,
+                true,
+                false
+              );
+              updateRepoHeader(repoName, true);
+              loadIndexedRepositories();
+              if (btnSetRepo) {
+                btnSetRepo.disabled = false;
+                btnSetRepo.textContent = 'Set Repo';
+              }
+              if (currentActiveTab === 'arch') {
+                loadArchitectureDashboard(true);
+              }
+            }
+          } else if (sData.status === 'error') {
+            clearInterval(repoPollInterval);
+            repoPollInterval = null;
+            if (isActive) {
+              const errStep = sData.step || 1;
+              const errPct = sData.percent || (errStep * 25);
+              updatePipelineProgressUI(
+                errStep,
+                errPct,
+                `✕ Indexing error for ${repoName}`,
+                sData.error || sData.detail || 'Pipeline failed',
+                false,
+                true
+              );
+              updateRepoHeader(repoName, false, true);
+              if (btnSetRepo) {
+                btnSetRepo.disabled = false;
+                btnSetRepo.textContent = 'Set Repo';
+              }
+              if (currentActiveTab === 'arch') {
+                loadArchitectureDashboard(true);
+              }
+            }
+          } else if (sData.status === 'indexing') {
+            if (isActive) {
+              const stepNum = sData.step || 1;
+              const pctNum = sData.percent || 10;
+              updatePipelineProgressUI(
+                stepNum,
+                pctNum,
+                sData.progress || `Indexing ${repoName}...`,
+                sData.detail || 'Processing repository files...'
+              );
+              headerRepoBadge.textContent = `Indexing ${pctNum}%`;
+              headerRepoBadge.className = 'badge-unset';
+            }
+          }
+        } catch (pollErr) {
+          pollErrorCount++;
+          console.warn(`Polling notice (attempt ${pollErrorCount}):`, pollErr);
+          // Only stop polling after 6 consecutive failed requests
+          if (pollErrorCount >= 6) {
+            clearInterval(repoPollInterval);
+            repoPollInterval = null;
+            if (activeId === targetConvId) {
+              updatePipelineProgressUI(1, 0, '✕ Connection Warning', 'Lost connection to backend server. Please verify python server.py is running.', false, true);
+              updateRepoHeader(repoName, false, true);
+              if (btnSetRepo) {
+                btnSetRepo.disabled = false;
+                btnSetRepo.textContent = 'Set Repo';
+              }
+            }
+          }
+        }
+      }, 600);
+    }
+
+    async function checkExistingRepoStatus(repoName) {
+      if (!repoName) return;
+      try {
+        const sRes = await fetch(`${API_BASE_URL}/api/repository/status?repo_name=${encodeURIComponent(repoName)}`);
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          if (sData.status === 'ready') {
+            updateRepoHeader(repoName, true);
+            if (repoProgressBox && repoProgressBox.style.display !== 'none') {
+              updatePipelineProgressUI(
+                4,
+                100,
+                `✓ Repository ${repoName} is indexed and ready!`,
+                `${sData.code_chunks || 0} code chunks & ${sData.history_chunks || 0} GitHub issue/PR records in ChromaDB.`,
+                true,
+                false
+              );
+            }
+          } else if (sData.status === 'indexing') {
+            updateRepoHeader(repoName, false);
+            if (btnSetRepo) {
+              btnSetRepo.disabled = true;
+              btnSetRepo.textContent = '⏳ Indexing...';
+            }
+            updatePipelineProgressUI(
+              sData.step || 1,
+              sData.percent || 10,
+              sData.progress || `Indexing ${repoName}...`,
+              sData.detail || 'Processing repository files...'
+            );
+            const current = getActiveConv();
+            startRepoStatusPolling(repoName, current.id);
+          }
+        }
+      } catch (e) {
+        console.warn('Initial repo status check error:', e);
+      }
     }
 
     async function handleSetRepo(url) {
@@ -856,21 +2264,26 @@
       }
 
       const current = getActiveConv();
-      const repoName = normalizeRepoIdentifier(url);
+      const targetConvId = current.id;
+      const initialRepoName = normalizeRepoIdentifier(url);
       current.repoUrl = url;
-      current.repoName = repoName;
+      current.repoName = initialRepoName;
+      if (!current.title || current.title === 'New Chat') {
+        current.title = initialRepoName;
+      }
       saveToStorage();
+      renderSidebarHistory();
 
       if (btnSetRepo) {
         btnSetRepo.disabled = true;
         btnSetRepo.textContent = '⏳ Indexing...';
       }
-      headerRepoName.textContent = repoName;
+      headerRepoName.textContent = initialRepoName;
       headerRepoBadge.textContent = 'Indexing...';
       headerRepoBadge.className = 'badge-unset';
 
       repoAlert.style.display = 'none';
-      updatePipelineProgressUI(1, 5, `Starting ingestion pipeline for ${repoName}...`, 'Connecting to local backend server...');
+      updatePipelineProgressUI(1, 5, `Starting ingestion pipeline for ${initialRepoName}...`, 'Connecting to local backend server...');
 
       if (repoPollInterval) clearInterval(repoPollInterval);
 
@@ -886,81 +2299,38 @@
           throw new Error(data.detail || `HTTP ${res.status}`);
         }
 
+        // Use canonical repository identifier from backend
+        const canonicalRepoName = data.repo_name || data.repository?.name || initialRepoName;
+        current.repoName = canonicalRepoName;
+        saveToStorage();
+        renderSidebarHistory();
+        headerRepoName.textContent = canonicalRepoName;
+
         if (data.status === 'ready') {
           updatePipelineProgressUI(
             4,
             100,
-            `✓ ${repoName} is indexed and ready!`,
+            `✓ ${canonicalRepoName} is indexed and ready!`,
             `${data.code_chunks || 0} code chunks & ${data.history_chunks || 0} GitHub issue/PR records available in ChromaDB.`,
             true,
             false
           );
-          updateRepoHeader(repoName, true);
+          updateRepoHeader(canonicalRepoName, true);
           loadIndexedRepositories();
           if (btnSetRepo) {
             btnSetRepo.disabled = false;
             btnSetRepo.textContent = 'Set Repo';
           }
+          if (currentActiveTab === 'arch') {
+            loadArchitectureDashboard(true);
+          }
         } else {
-          updatePipelineProgressUI(1, 10, data.message || `Step 1/4: Cloning ${repoName}...`, 'Running shallow git clone --depth 1...');
-          repoPollInterval = setInterval(async () => {
-            try {
-              const sRes = await fetch(`${API_BASE_URL}/api/repository/status?repo_name=${encodeURIComponent(repoName)}`);
-              if (sRes.ok) {
-                const sData = await sRes.json();
-                if (sData.status === 'ready') {
-                  clearInterval(repoPollInterval);
-                  updatePipelineProgressUI(
-                    4,
-                    100,
-                    `✓ Repository ${repoName} indexed and ready!`,
-                    `Stored ${sData.code_chunks || 0} AST/code chunks & ${sData.history_chunks || 0} GitHub issue/PR chunks. You can now ask questions below.`,
-                    true,
-                    false
-                  );
-                  updateRepoHeader(repoName, true);
-                  loadIndexedRepositories();
-                  if (btnSetRepo) {
-                    btnSetRepo.disabled = false;
-                    btnSetRepo.textContent = 'Set Repo';
-                  }
-                } else if (sData.status === 'error') {
-                  clearInterval(repoPollInterval);
-                  updatePipelineProgressUI(
-                    sData.step || 1,
-                    100,
-                    `✕ Indexing error for ${repoName}`,
-                    sData.error || 'Pipeline failed',
-                    false,
-                    true
-                  );
-                  if (btnSetRepo) {
-                    btnSetRepo.disabled = false;
-                    btnSetRepo.textContent = 'Set Repo';
-                  }
-                } else {
-                  const stepNum = sData.step || 1;
-                  const pctNum = sData.percent || 15;
-                  updatePipelineProgressUI(
-                    stepNum,
-                    pctNum,
-                    sData.progress || `Indexing ${repoName}...`,
-                    sData.detail || 'Processing repository files...'
-                  );
-                  headerRepoBadge.textContent = `Indexing ${pctNum}%`;
-                }
-              }
-            } catch (pollErr) {
-              clearInterval(repoPollInterval);
-              if (btnSetRepo) {
-                btnSetRepo.disabled = false;
-                btnSetRepo.textContent = 'Set Repo';
-              }
-            }
-          }, 800);
+          updatePipelineProgressUI(1, 10, data.message || `Step 1/4: Cloning ${canonicalRepoName}...`, 'Running shallow git clone --depth 1...');
+          startRepoStatusPolling(canonicalRepoName, targetConvId);
         }
       } catch (err) {
-        updatePipelineProgressUI(1, 100, '✕ Connection / Pipeline Error', `Could not index repository: ${err.message}`, false, true);
+        updatePipelineProgressUI(1, 0, '✕ Connection / Pipeline Error', `Could not index repository: ${err.message}`, false, true);
+        updateRepoHeader(initialRepoName, false, true);
         if (btnSetRepo) {
           btnSetRepo.disabled = false;
           btnSetRepo.textContent = 'Set Repo';
@@ -968,15 +2338,31 @@
       }
     }
 
-    function updateRepoHeader(name, isIndexed) {
+    function updateRepoHeader(name, isIndexed, isError = false) {
       if (name) {
         headerRepoName.textContent = name;
-        headerRepoBadge.textContent = isIndexed ? 'Indexed' : 'Pending';
-        headerRepoBadge.className = isIndexed ? 'badge-indexed' : 'badge-unset';
+        if (isError) {
+          headerRepoBadge.textContent = 'Error';
+          headerRepoBadge.className = 'badge-unset pill-error';
+          headerRepoBadge.style.color = '#ffb4ab';
+          headerRepoBadge.style.borderColor = 'rgba(255, 180, 171, 0.4)';
+        } else if (isIndexed) {
+          headerRepoBadge.textContent = 'Indexed';
+          headerRepoBadge.className = 'badge-indexed';
+          headerRepoBadge.style.color = '';
+          headerRepoBadge.style.borderColor = '';
+        } else {
+          headerRepoBadge.textContent = 'Pending';
+          headerRepoBadge.className = 'badge-unset';
+          headerRepoBadge.style.color = '';
+          headerRepoBadge.style.borderColor = '';
+        }
       } else {
         headerRepoName.textContent = 'No repository selected';
         headerRepoBadge.textContent = 'Unset';
         headerRepoBadge.className = 'badge-unset';
+        headerRepoBadge.style.color = '';
+        headerRepoBadge.style.borderColor = '';
       }
     }
 
@@ -1008,10 +2394,19 @@
       conversations.forEach(conv => {
         const item = document.createElement('div');
         item.className = `history-item ${conv.id === activeId ? 'active' : ''}`;
+        const hasRepo = Boolean(conv.repoName || conv.repoUrl);
+        const repoDisplay = conv.repoName || normalizeRepoIdentifier(conv.repoUrl);
+
         item.innerHTML = `
           <div class="title-box">
-            <span class="material-symbols-outlined" style="font-size: 16px; color: var(--outline);">chat_bubble</span>
-            <span class="title-text">${escapeHtml(conv.title || 'New Chat')}</span>
+            <div class="title-row">
+              <span class="material-symbols-outlined" style="font-size: 15px; color: ${conv.id === activeId ? 'var(--primary)' : 'var(--outline)'}; flex-shrink: 0;">chat_bubble</span>
+              <span class="title-text">${escapeHtml(conv.title || 'New Chat')}</span>
+            </div>
+            <div class="repo-tag ${hasRepo ? 'tag-indexed' : 'tag-empty'}" title="${hasRepo ? 'Repository: ' + escapeHtml(repoDisplay) : 'No repository linked to this chat'}">
+              <span class="material-symbols-outlined" style="font-size: 11px;">${hasRepo ? 'folder_open' : 'link_off'}</span>
+              <span>${escapeHtml(hasRepo ? repoDisplay : 'No Repo')}</span>
+            </div>
           </div>
           <button class="btn-del-chat" title="Delete chat">
             <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
@@ -1019,6 +2414,7 @@
         `;
 
         item.addEventListener('click', () => {
+          if (activeId === conv.id) return;
           activeId = conv.id;
           saveToStorage();
           renderSidebarHistory();
@@ -1037,9 +2433,9 @@
       if (!current.repoName && !current.repoUrl) {
         resetRepoBoxUI();
       } else {
-        repoInput.value = current.repoUrl || '';
-        if (repoProgressBox) repoProgressBox.style.display = 'none';
+        repoInput.value = current.repoUrl || current.repoName || '';
         if (repoAlert) repoAlert.style.display = 'none';
+        checkExistingRepoStatus(current.repoName || current.repoUrl);
       }
       updateRepoHeader(current.repoName, Boolean(current.repoName));
 
@@ -1058,6 +2454,11 @@
         });
       }
       scrollToBottom();
+
+      // Synchronize Architecture Hub when active conversation changes
+      if (currentActiveTab === 'arch') {
+        loadArchitectureDashboard();
+      }
     }
 
     function renderUserMessage(text, timestamp) {
@@ -1151,6 +2552,18 @@
         return;
       } else if (!current.repoName && repoInput.value.trim()) {
         await handleSetRepo(repoInput.value.trim());
+        if (repoPollInterval) {
+          return;
+        }
+      }
+
+      // Check if repository is currently indexing
+      if (repoPollInterval || (headerRepoBadge && headerRepoBadge.textContent.includes('Indexing'))) {
+        repoAlert.style.display = 'block';
+        repoAlert.style.color = '#ffb95f';
+        repoAlert.textContent = 'Repository ingestion is currently in progress. Please wait until indexing completes (100%) before sending questions.';
+        setTimeout(() => { repoAlert.style.display = 'none'; }, 4000);
+        return;
       }
 
       const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1285,7 +2698,626 @@
       return text;
     }
 
+    /* ── Architecture Intelligence Hub Controller ──────────────────────────── */
+    function switchTab(tab) {
+      currentActiveTab = tab;
+      if (tab === 'chat') {
+        tabBtnChat.classList.add('active');
+        tabBtnArch.classList.remove('active');
+        chatScroll.style.display = 'flex';
+        inputDock.style.display = 'flex';
+        architectureView.style.display = 'none';
+      } else if (tab === 'arch') {
+        tabBtnArch.classList.add('active');
+        tabBtnChat.classList.remove('active');
+        chatScroll.style.display = 'none';
+        inputDock.style.display = 'none';
+        architectureView.style.display = 'block';
+        loadArchitectureDashboard();
+      }
+    }
+
+    async function loadArchitectureDashboard(forceRefresh = false) {
+      const current = getActiveConv();
+      const repo = current.repoName || normalizeRepoIdentifier(current.repoUrl);
+
+      if (!repo) {
+        currentArchitectureData = null;
+        archContent.style.display = 'none';
+        archLoadingState.style.display = 'none';
+        archEmptyState.style.display = 'block';
+        const h3 = archEmptyState.querySelector('h3');
+        if (h3) h3.textContent = 'No Repository Selected for this Chat';
+        const p = archEmptyState.querySelector('p');
+        if (p) p.textContent = 'This conversation does not have a repository linked. Set a repository URL above to explore its architecture.';
+        if (archRepoPillName) archRepoPillName.textContent = 'No repository';
+        if (archSubtitle) archSubtitle.textContent = 'Please select or index a repository in Chat Assistant to explore its architecture.';
+        return;
+      }
+
+      if (forceRefresh) {
+        architectureCacheByRepo.delete(repo);
+      } else if (architectureCacheByRepo.has(repo)) {
+        const cached = architectureCacheByRepo.get(repo);
+        currentArchitectureData = cached;
+        renderArchitectureUI(cached);
+        return;
+      }
+
+      if (forceRefresh && btnRefreshArch) {
+        btnRefreshArch.disabled = true;
+        btnRefreshArch.innerHTML = '<span class="material-symbols-outlined thinking-pulse" style="font-size: 16px;">refresh</span><span>Re-Analyzing...</span>';
+      }
+
+      archContent.style.display = 'none';
+      archEmptyState.style.display = 'none';
+      archLoadingState.style.display = 'block';
+      archSubtitle.textContent = `Analyzing repository architecture for ${repo}...`;
+
+      const startTime = performance.now();
+      try {
+        const url = `${API_BASE_URL}/api/architecture?repo_name=${encodeURIComponent(repo)}${forceRefresh ? '&refresh=true' : ''}`;
+        const res = await fetch(url);
+        if (res.status === 202) {
+          const waitData = await res.json();
+          archLoadingState.style.display = 'none';
+          archEmptyState.style.display = 'block';
+          const h3 = archEmptyState.querySelector('h3');
+          if (h3) h3.textContent = 'Repository Indexing in Progress';
+          const p = archEmptyState.querySelector('p');
+          if (p) p.textContent = waitData.detail || `Repository ${repo} is currently being indexed. Architecture will be available once indexing finishes.`;
+          return;
+        }
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        architectureCacheByRepo.set(repo, data);
+
+        // Verify that the active conversation is still targeting this repository before rendering
+        const activeCurrent = getActiveConv();
+        const activeRepo = activeCurrent.repoName || normalizeRepoIdentifier(activeCurrent.repoUrl);
+        if (activeRepo === repo) {
+          currentArchitectureData = data;
+          renderArchitectureUI(data);
+        }
+
+        const elapsed = Math.round(performance.now() - startTime);
+        if (forceRefresh) {
+          showArchToast(`✓ Architecture model re-analyzed in ${elapsed}ms (Health: ${data.health_score}/100, ${data.total_modules || 0} modules)`, 'success');
+        }
+      } catch (err) {
+        console.error("Architecture fetch error:", err);
+        archLoadingState.style.display = 'none';
+        archEmptyState.style.display = 'block';
+        const h3 = archEmptyState.querySelector('h3');
+        if (h3) h3.textContent = 'Could not load architecture model';
+        const p = archEmptyState.querySelector('p');
+        if (p) p.textContent = `Make sure ${repo} is indexed. Error: ${err.message}`;
+        if (forceRefresh) {
+          showArchToast(`✕ Re-analysis failed: ${err.message}`, 'error');
+        }
+      } finally {
+        if (btnRefreshArch) {
+          btnRefreshArch.disabled = false;
+          btnRefreshArch.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">refresh</span><span>Re-Analyze</span>';
+        }
+      }
+    }
+
+    function renderArchitectureUI(data) {
+      archLoadingState.style.display = 'none';
+      archEmptyState.style.display = 'none';
+      archContent.style.display = 'flex';
+
+      const repoName = data.repository || 'codebase';
+      if (archRepoPillName) archRepoPillName.textContent = repoName;
+      if (archSubtitle) archSubtitle.textContent = `Static code structure analysis, layer boundary verification, and package coupling metrics for ${repoName}.`;
+
+      // 1. Dominant Pattern & Metrics
+      metricDominantPattern.textContent = (data.dominant_pattern || 'Layered Architecture').replace(/_/g, ' ').toUpperCase();
+      
+      const totalModules = Object.keys(data.modules || {}).length;
+      const totalEdges = data.dependency_graph?.edges?.length || 0;
+      const cyclesCount = data.circular_dependencies?.length || 0;
+      const violations = data.violations || [];
+
+      metricTotalModules.textContent = totalModules;
+      metricTotalEdges.textContent = totalEdges;
+      metricCircularCount.textContent = cyclesCount;
+      metricCircularCount.style.color = cyclesCount > 0 ? '#ffb4ab' : '#4ade80';
+
+      // Health Score Calculation
+      let health = 100;
+      const highViolations = violations.filter(v => v.severity === 'HIGH').length;
+      const medViolations = violations.filter(v => v.severity === 'MEDIUM').length;
+      health -= (highViolations * 15);
+      health -= (medViolations * 5);
+      health -= (cyclesCount * 10);
+      health = Math.max(0, Math.min(100, health));
+
+      let healthClass = 'health-good';
+      let healthLabel = 'Clean';
+      if (health < 60) {
+        healthClass = 'health-danger';
+        healthLabel = 'Needs Attention';
+      } else if (health < 85) {
+        healthClass = 'health-warning';
+        healthLabel = 'Fair';
+      }
+      metricHealthBadge.className = `arch-health-badge ${healthClass}`;
+      metricHealthBadge.innerHTML = `
+        <span class="material-symbols-outlined" style="font-size:14px;">${health >= 85 ? 'check_circle' : health >= 60 ? 'warning' : 'error'}</span>
+        <span>${health}/100 • ${healthLabel}</span>
+      `;
+
+      // Health Scorecard Breakdown
+      const healthContainer = document.getElementById('metric-health-container');
+      if (healthContainer) {
+        let breakdownEl = healthContainer.querySelector('.health-scorecard-breakdown');
+        if (!breakdownEl) {
+          breakdownEl = document.createElement('div');
+          breakdownEl.className = 'health-scorecard-breakdown';
+          healthContainer.appendChild(breakdownEl);
+        }
+        breakdownEl.innerHTML = `
+          <div class="scorecard-item"><span>Base Score:</span> <span>100</span></div>
+          <div class="scorecard-item" style="color:${cyclesCount > 0 ? '#ffb4ab' : 'var(--outline)'};"><span>Cycles Penalty:</span> <span>-${cyclesCount * 10}</span></div>
+          <div class="scorecard-item" style="color:${highViolations > 0 ? '#ffb4ab' : 'var(--outline)'};"><span>High Violations:</span> <span>-${highViolations * 15}</span></div>
+          <div class="scorecard-item" style="color:${medViolations > 0 ? '#ffb95f' : 'var(--outline)'};"><span>Med Violations:</span> <span>-${medViolations * 5}</span></div>
+          <div class="scorecard-item" style="border-top:1px solid rgba(255,255,255,0.06); padding-top:0.15rem; font-weight:600; color:var(--primary);"><span>Net Fitness:</span> <span>${health}/100</span></div>
+        `;
+      }
+
+      // 2. Discovered Patterns
+      patternsGrid.innerHTML = '';
+      const patterns = data.patterns || data.detected_patterns || [];
+      patternsCountPill.textContent = `${patterns.length} Patterns`;
+      patterns.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'pattern-card';
+        const pName = p.pattern || p.name || 'Architectural Pattern';
+        const pDesc = p.description || p.summary || '';
+        const rawConf = typeof p.confidence === 'number' ? p.confidence : 85;
+        const confPct = rawConf <= 1.0 ? Math.round(rawConf * 100) : Math.round(rawConf);
+        const evList = (p.evidence || []).slice(0, 4).map(e => `<li>${escapeHtml(e)}</li>`).join('');
+        card.innerHTML = `
+          <div class="pattern-card-header">
+            <span class="pattern-card-name">${escapeHtml(pName.replace(/_/g, ' ').toUpperCase())}</span>
+            <span class="confidence-meter">${confPct}% Confidence</span>
+          </div>
+          <div class="pattern-desc">${escapeHtml(pDesc)}</div>
+          <div style="font-family: var(--mono); font-size: 0.7rem; color: var(--outline); text-transform: uppercase;">
+            Category: <span style="color: var(--tertiary);">${escapeHtml(p.category || 'Structural Pattern')}</span>
+          </div>
+          ${evList ? `<ul class="pattern-evidence-list">${evList}</ul>` : ''}
+        `;
+        patternsGrid.appendChild(card);
+      });
+
+      // 3. Interactive Tier Pipeline & Layer Hierarchy Stack
+      const tierPipeline = document.getElementById('arch-tier-pipeline');
+      if (tierPipeline) {
+        const tierOrder = [
+          { key: 'Presentation', icon: 'desktop_windows', label: 'Presentation' },
+          { key: 'Application', icon: 'dynamic_feed', label: 'Application' },
+          { key: 'Domain', icon: 'diamond', label: 'Domain' },
+          { key: 'Infrastructure', icon: 'dns', label: 'Infrastructure' },
+          { key: 'Shared / Utility', icon: 'widgets', label: 'Shared / Utility' }
+        ];
+        tierPipeline.innerHTML = tierOrder.map((t, idx) => {
+          const count = (data.layers && data.layers[t.key]) ? data.layers[t.key].length : 0;
+          const arrow = idx < tierOrder.length - 1 ? '<span class="material-symbols-outlined tier-arrow">arrow_forward</span>' : '';
+          return `
+            <div class="tier-node" data-tier="${escapeHtml(t.key)}" title="Click to filter modules in ${t.label}">
+              <span class="material-symbols-outlined" style="font-size: 18px; color: var(--tertiary);">${t.icon}</span>
+              <span class="tier-node-name">${t.label}</span>
+              <span class="tier-node-count">${count} modules</span>
+            </div>
+            ${arrow}
+          `;
+        }).join('');
+
+        tierPipeline.querySelectorAll('.tier-node').forEach(node => {
+          node.addEventListener('click', () => {
+            const isSel = node.classList.contains('selected');
+            tierPipeline.querySelectorAll('.tier-node').forEach(n => n.classList.remove('selected'));
+            const tier = node.dataset.tier.toLowerCase();
+            const rows = layersStack.querySelectorAll('.layer-row');
+            if (isSel) {
+              rows.forEach(r => { r.style.display = 'flex'; });
+            } else {
+              node.classList.add('selected');
+              rows.forEach(r => {
+                const badgeText = (r.querySelector('.layer-badge')?.textContent || '').toLowerCase();
+                if (badgeText.includes(tier) || tier.includes(badgeText)) {
+                  r.style.display = 'flex';
+                } else {
+                  r.style.display = 'none';
+                }
+              });
+            }
+          });
+        });
+      }
+
+      layersStack.innerHTML = '';
+      const layerIcons = {
+        presentation: 'desktop_windows',
+        application: 'dynamic_feed',
+        domain: 'diamond',
+        infrastructure: 'dns',
+        shared: 'widgets'
+      };
+
+      let layersList = [];
+      if (Array.isArray(data.layers_detail) && data.layers_detail.length > 0) {
+        layersList = data.layers_detail.map(ld => ({
+          name: ld.layer,
+          modules: (ld.modules || []).map(m => typeof m === 'object' ? (m.name || m.file) : m),
+          moduleCount: ld.module_count || (ld.modules ? ld.modules.length : 0)
+        }));
+      } else if (data.layers && typeof data.layers === 'object') {
+        layersList = Object.entries(data.layers).map(([layerName, mods]) => ({
+          name: layerName,
+          modules: Array.isArray(mods) ? mods : [],
+          moduleCount: Array.isArray(mods) ? mods.length : 0
+        }));
+      }
+
+      layersList.forEach(layerInfo => {
+        if (!layerInfo.modules || layerInfo.modules.length === 0) return;
+        const lowerName = layerInfo.name.toLowerCase();
+        let cssKey = 'shared';
+        if (lowerName.includes('presentation') || lowerName.includes('api') || lowerName.includes('route')) cssKey = 'presentation';
+        else if (lowerName.includes('application') || lowerName.includes('service')) cssKey = 'application';
+        else if (lowerName.includes('domain') || lowerName.includes('model')) cssKey = 'domain';
+        else if (lowerName.includes('infra') || lowerName.includes('db') || lowerName.includes('repo')) cssKey = 'infrastructure';
+        else cssKey = 'shared';
+
+        const row = document.createElement('div');
+        row.className = 'layer-row';
+        const chipsHtml = layerInfo.modules.map(m => `<span class="module-chip" title="Module in ${escapeHtml(layerInfo.name)} layer">${escapeHtml(m)}</span>`).join('');
+        row.innerHTML = `
+          <div class="layer-badge layer-${cssKey}">
+            <span class="material-symbols-outlined" style="font-size:16px;">${layerIcons[cssKey] || 'layers'}</span>
+            <span>${escapeHtml(layerInfo.name)}</span>
+            <span style="font-size:0.68rem; opacity:0.8;">(${layerInfo.moduleCount})</span>
+          </div>
+          <div class="layer-modules-chips">${chipsHtml}</div>
+        `;
+        layersStack.appendChild(row);
+      });
+
+      // 4. Circular Cycles Alert & Coupling Table
+      circularCyclesContainer.innerHTML = '';
+      if (cyclesCount > 0) {
+        const cycleBox = document.createElement('div');
+        cycleBox.className = 'cycle-alert-box';
+        const cycleItems = data.circular_dependencies.map((c, i) => `
+          <div class="cycle-item">
+            <strong>Cycle #${i+1}:</strong> ${c.map(escapeHtml).join(' &rarr; ')}
+          </div>
+        `).join('');
+        cycleBox.innerHTML = `
+          <div style="display:flex; align-items:center; gap:0.5rem; font-weight:600; color:#ffb4ab; font-size:0.85rem;">
+            <span class="material-symbols-outlined" style="font-size:18px;">warning</span>
+            <span>Detected ${cyclesCount} Circular Dependency Cycle(s)</span>
+          </div>
+          <p style="font-size:0.75rem; color:var(--on-surface-variant); margin-top:0.2rem;">
+            Circular loops prevent isolated testing, make tree-shaking difficult, and risk runtime initialization deadlocks.
+          </p>
+          <div style="display:flex; flex-direction:column; gap:0.35rem; margin-top:0.3rem;">
+            ${cycleItems}
+          </div>
+        `;
+        circularCyclesContainer.appendChild(cycleBox);
+      } else {
+        const cleanBox = document.createElement('div');
+        cleanBox.className = 'clean-dag-box';
+        cleanBox.innerHTML = `
+          <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span>
+          <span><strong>Clean Directed Acyclic Graph:</strong> Zero circular dependency cycles detected across all components.</span>
+        `;
+        circularCyclesContainer.appendChild(cleanBox);
+      }
+
+      // Coupling Table with Expandable Inbound / Outbound Dependencies
+      couplingTableBody.innerHTML = '';
+      const moduleList = Object.values(data.modules || {});
+      moduleList.sort((a, b) => (b.dependencies.length + b.dependents.length) - (a.dependencies.length + a.dependents.length));
+      moduleList.slice(0, 25).forEach((m, idx) => {
+        const fanIn = m.dependents.length;
+        const fanOut = m.dependencies.length;
+        const total = fanIn + fanOut;
+        const inst = total > 0 ? (fanOut / total).toFixed(2) : '0.00';
+        const instNum = parseFloat(inst);
+        let instBadge = `<span class="inst-badge inst-balanced">${inst} • Balanced</span>`;
+        if (instNum <= 0.3) {
+          instBadge = `<span class="inst-badge inst-stable">${inst} • Stable</span>`;
+        } else if (instNum >= 0.7) {
+          instBadge = `<span class="inst-badge inst-volatile">${inst} • Volatile</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-family: var(--mono); font-weight: 500; color: var(--on-surface);">
+            <button class="btn-toggle-expand" data-target="detail-${idx}" title="Expand dependencies">
+              <span class="material-symbols-outlined" style="font-size:16px;">chevron_right</span>
+            </button>
+            <span>${escapeHtml(m.name)}</span>
+          </td>
+          <td><span class="sev-badge sev-LOW">${escapeHtml(m.layer || 'shared')}</span></td>
+          <td style="font-family: var(--mono); color: #4ade80;">${fanIn}</td>
+          <td style="font-family: var(--mono); color: #ffb95f;">${fanOut}</td>
+          <td>${instBadge}</td>
+          <td>
+            <button class="btn-fix-prompt" data-module="${escapeHtml(m.name)}">
+              <span class="material-symbols-outlined" style="font-size:13px;">search</span>
+              <span>Inspect</span>
+            </button>
+          </td>
+        `;
+
+        // Expandable sub-row showing concrete Inbound Callers & Outbound Dependencies
+        const detailTr = document.createElement('tr');
+        detailTr.id = `detail-${idx}`;
+        detailTr.className = 'coupling-detail-row';
+        detailTr.style.display = 'none';
+        
+        const callersList = m.dependents && m.dependents.length > 0 
+          ? m.dependents.map(d => `<span class="coupling-chip-mini" title="Caller">${escapeHtml(d)}</span>`).join('')
+          : '<span style="color:var(--outline); font-style:italic;">None (Top-level entry or uncalled module)</span>';
+
+        const depsList = m.dependencies && m.dependencies.length > 0
+          ? m.dependencies.map(d => `<span class="coupling-chip-mini" title="Dependency">${escapeHtml(d)}</span>`).join('')
+          : '<span style="color:var(--outline); font-style:italic;">None (Leaf / Decoupled module)</span>';
+
+        detailTr.innerHTML = `
+          <td colspan="6" style="padding: 0;">
+            <div class="coupling-detail-content">
+              <div class="coupling-sub-section">
+                <h5><span class="material-symbols-outlined" style="font-size:14px; color:#4ade80;">login</span> Inbound Callers (Afferent Ca: ${fanIn})</h5>
+                <div class="coupling-chips-list">${callersList}</div>
+              </div>
+              <div class="coupling-sub-section">
+                <h5><span class="material-symbols-outlined" style="font-size:14px; color:#ffb95f;">logout</span> Outbound Dependencies (Efferent Ce: ${fanOut})</h5>
+                <div class="coupling-chips-list">${depsList}</div>
+              </div>
+            </div>
+          </td>
+        `;
+
+        const expandBtn = tr.querySelector('.btn-toggle-expand');
+        expandBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isExpanded = detailTr.style.display !== 'none';
+          detailTr.style.display = isExpanded ? 'none' : 'table-row';
+          expandBtn.classList.toggle('expanded', !isExpanded);
+        });
+
+        const inspectBtn = tr.querySelector('.btn-fix-prompt');
+        inspectBtn.addEventListener('click', () => {
+          switchTab('chat');
+          const prompt = `Can you provide a deep dive into component ${m.name} in layer ${m.layer}?\n- Explain its inbound afferent callers (${fanIn}) and outbound efferent dependencies (${fanOut})\n- Its Instability score of ${inst} (${instNum <= 0.3 ? 'Stable' : instNum >= 0.7 ? 'Volatile' : 'Balanced'})\n- How it fits into the overall architecture and if any refactoring is advised.`;
+          dockTextarea.value = prompt;
+          dockTextarea.focus();
+          sendMessage(prompt);
+        });
+
+        couplingTableBody.appendChild(tr);
+        couplingTableBody.appendChild(detailTr);
+      });
+
+      // 5. Conformance Violations Auditor
+      violationsTableBody.innerHTML = '';
+      
+      violationsCountBadge.textContent = `${violations.length} Violations`;
+      violationsCountBadge.className = violations.length === 0 ? 'pill pill-cyan' : 'pill pill-error';
+      
+      if (subnavViolationsCount) subnavViolationsCount.textContent = violations.length;
+      if (filterCountAll) filterCountAll.textContent = violations.length;
+      if (filterCountHigh) filterCountHigh.textContent = highViolations;
+      if (filterCountMed) filterCountMed.textContent = medViolations;
+
+      if (violations.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td colspan="5" style="text-align:center; color:#4ade80; padding:2rem; font-family:var(--mono);">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem;">
+              <span class="material-symbols-outlined" style="font-size:28px;">verified</span>
+              <span><strong>Clean Architecture!</strong> Zero layer boundary or conformance violations detected.</span>
+              <span style="font-size:0.75rem; color:var(--outline);">All imports strictly obey architectural separation of concerns.</span>
+            </div>
+          </td>
+        `;
+        violationsTableBody.appendChild(tr);
+      } else {
+        violations.forEach(v => {
+          const tr = document.createElement('tr');
+          tr.dataset.severity = v.severity || 'LOW';
+          tr.innerHTML = `
+            <td><span class="sev-badge sev-${v.severity}">${v.severity}</span></td>
+            <td style="font-family: var(--mono); font-weight: 500; color: var(--primary); font-size: 0.76rem;">${escapeHtml(v.rule_name)}</td>
+            <td style="font-family: var(--mono); font-size: 0.73rem; color: var(--outline);">${escapeHtml(v.source_file)}:${v.line_number}</td>
+            <td style="font-size: 0.78rem; color: var(--on-surface-variant); max-width: 25rem;">
+              <div>${escapeHtml(v.description)}</div>
+              <div style="color: var(--secondary); font-size: 0.72rem; margin-top: 0.25rem;">💡 ${escapeHtml(v.remediation)}</div>
+            </td>
+            <td>
+              <button class="btn-fix-prompt">
+                <span class="material-symbols-outlined" style="font-size:13px;">auto_fix_high</span>
+                <span>Ask Agent</span>
+              </button>
+            </td>
+          `;
+          const btn = tr.querySelector('.btn-fix-prompt');
+          btn.addEventListener('click', () => askAgentToFix(v));
+          violationsTableBody.appendChild(tr);
+        });
+      }
+
+      // 6. Repository Conventions
+      conventionsGrid.innerHTML = '';
+      const conv = data.conventions || {};
+      const convItems = [
+        {
+          label: 'File Naming Style',
+          value: conv.file_naming?.dominant_style || 'N/A',
+          meta: `${conv.file_naming?.consistency_pct || 0}% Consistency`,
+          pct: conv.file_naming?.consistency_pct || 0
+        },
+        {
+          label: 'Class Naming Style',
+          value: conv.class_naming?.dominant_style || 'N/A',
+          meta: `${conv.class_naming?.consistency_pct || 0}% Consistency`,
+          pct: conv.class_naming?.consistency_pct || 0
+        },
+        {
+          label: 'Function Naming Style',
+          value: conv.function_naming?.dominant_style || 'N/A',
+          meta: `${conv.function_naming?.consistency_pct || 0}% Consistency`,
+          pct: conv.function_naming?.consistency_pct || 0
+        },
+        {
+          label: 'Async Paradigm',
+          value: (conv.async_style?.predominant || 'N/A').toUpperCase(),
+          meta: `${conv.async_style?.async_functions || 0} async / ${conv.async_style?.sync_functions || 0} sync funcs`,
+          pct: Math.round(((conv.async_style?.async_functions || 0) / Math.max((conv.async_style?.async_functions || 0) + (conv.async_style?.sync_functions || 0), 1)) * 100)
+        },
+        {
+          label: 'Error Handling Density',
+          value: `${(conv.error_handling?.try_catch_density_per_kloc || 0).toFixed(1)} / kLoC`,
+          meta: `${(conv.error_handling?.custom_exception_classes || []).length} custom exceptions defined`,
+          pct: Math.min(100, Math.round((conv.error_handling?.try_catch_density_per_kloc || 0) * 10))
+        }
+      ];
+      convItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'convention-card';
+        card.innerHTML = `
+          <span class="convention-label">${item.label}</span>
+          <span class="convention-value">${escapeHtml(item.value)}</span>
+          <span class="convention-meta">${escapeHtml(item.meta)}</span>
+          <div class="convention-bar">
+            <div class="convention-bar-fill" style="width: ${item.pct}%;"></div>
+          </div>
+        `;
+        conventionsGrid.appendChild(card);
+      });
+    }
+
+    function askAgentToFix(violation) {
+      switchTab('chat');
+      const prompt = `Can you explain and help me resolve this architectural conformance violation in detail?\n- Rule: ${violation.rule_name}\n- File: ${violation.source_file} (Line ${violation.line_number})\n- Issue: ${violation.description}\n- Recommended Remediation: ${violation.remediation}`;
+      dockTextarea.value = prompt;
+      dockTextarea.focus();
+      sendMessage(prompt);
+    }
+
+    function exportArchitectureJson() {
+      const current = getActiveConv();
+      const repo = current.repoName || normalizeRepoIdentifier(current.repoUrl);
+      const data = (repo && architectureCacheByRepo.get(repo)) || currentArchitectureData;
+      if (!data) {
+        showArchToast('✕ No architecture model loaded to export', 'error');
+        return;
+      }
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      const repoClean = (data.repository || data.repo_name || repo || 'repository').replace(/[\/\\?%*:|"<>]/g, '_');
+      downloadAnchor.setAttribute("download", `architecture_${repoClean}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showArchToast('✓ Architecture Model exported as JSON!', 'success');
+    }
+
+    function exportArchitectureMarkdown() {
+      const current = getActiveConv();
+      const repo = current.repoName || normalizeRepoIdentifier(current.repoUrl);
+      const d = (repo && architectureCacheByRepo.get(repo)) || currentArchitectureData;
+      if (!d) {
+        showArchToast('✕ No architecture model loaded to export', 'error');
+        return;
+      }
+      const repoName = d.repository || repo || 'Repository';
+      const patterns = (d.patterns || d.detected_patterns || []).map(p => `- **${p.pattern || p.name}** (${p.confidence ? Math.round(p.confidence <= 1 ? p.confidence * 100 : p.confidence) : 85}% confidence): ${p.description || p.summary || ''}`).join('\n');
+      
+      const layers = (d.layers_detail || []).map(l => `### Layer: ${l.layer} (${l.module_count} modules)\n*${l.description}*\n- **Representative Modules**: ${(l.modules || []).map(m => typeof m === 'object' ? m.name : m).join(', ')}`).join('\n\n');
+
+      const violations = (d.violations || []).map(v => `- **[${v.severity}] ${v.rule_name}** at \`${v.source_file}:${v.line_number}\`\n  - *Issue*: ${v.description}\n  - *Remediation*: ${v.remediation}`).join('\n');
+
+      const coupling = Object.values(d.modules || {}).slice(0, 15).map(m => {
+        const ca = m.dependents.length;
+        const ce = m.dependencies.length;
+        const inst = (ca + ce) > 0 ? (ce / (ca + ce)).toFixed(2) : '0.00';
+        return `| \`${m.name}\` | ${m.layer || 'shared'} | ${ca} | ${ce} | ${inst} |`;
+      }).join('\n');
+
+      const mdContent = `# Architectural Assessment Report: ${repo}
+Generated on: ${new Date().toISOString()}
+
+## Executive Summary
+- **Dominant Pattern**: ${d.dominant_pattern || 'Layered Architecture'}
+- **Architecture Health Score**: ${d.health_score || 100}/100
+- **Total Scanned Components**: ${d.total_modules || 0}
+- **Dependency Connections**: ${d.dependency_graph?.edges?.length || 0}
+- **Circular Cycles**: ${d.circular_dependencies?.length || 0} (Tarjan's SCC)
+
+## 1. Discovered Architectural Patterns
+${patterns || 'No explicit patterns matched.'}
+
+## 2. Inferred Layer Hierarchy
+${layers || 'No layers identified.'}
+
+## 3. Package Coupling & Instability (Top Modules)
+| Component | Layer | Afferent (Ca) | Efferent (Ce) | Instability (I) |
+| :--- | :--- | :---: | :---: | :---: |
+${coupling}
+
+## 4. Architectural Conformance & Violations
+${violations || '✓ Zero architectural violations detected. Codebase strictly conforms to layer boundary rules.'}
+
+## 5. Repository Coding Conventions
+- **File Naming Style**: ${d.conventions?.file_naming?.dominant_style || 'N/A'} (${d.conventions?.file_naming?.consistency_pct || 0}% consistency)
+- **Class Naming Style**: ${d.conventions?.class_naming?.dominant_style || 'N/A'} (${d.conventions?.class_naming?.consistency_pct || 0}% consistency)
+- **Function Naming Style**: ${d.conventions?.function_naming?.dominant_style || 'N/A'} (${d.conventions?.function_naming?.consistency_pct || 0}% consistency)
+- **Async Execution Model**: ${d.conventions?.async_style?.predominant || 'N/A'}
+- **Defensive Error Handling**: ${(d.conventions?.error_handling?.try_catch_density_per_kloc || 0).toFixed(1)} try/catch blocks per 1,000 LoC
+
+---
+*Generated by Semantic Codebase RAG Architecture Intelligence Engine*
+`;
+      const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' });
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.href = URL.createObjectURL(blob);
+      const repoClean = repo.replace(/[\/\\?%*:|"<>]/g, '_');
+      downloadAnchor.setAttribute("download", `ARCHITECTURE_REPORT_${repoClean}.md`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showArchToast('✓ Executive Architecture Report exported as Markdown!', 'success');
+    }
+
+    function showArchToast(message, type = 'success') {
+      const toast = document.getElementById('arch-toast');
+      if (!toast) return;
+      toast.className = `arch-toast toast-${type} show`;
+      toast.innerHTML = `
+        <span class="material-symbols-outlined" style="font-size: 18px;">${type === 'success' ? 'check_circle' : 'error'}</span>
+        <span>${escapeHtml(message)}</span>
+      `;
+      clearTimeout(window.__archToastTimer);
+      window.__archToastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+
     window.addEventListener('DOMContentLoaded', init);
   </script>
+  <div id="arch-toast" class="arch-toast"></div>
 </body>
 </html>
